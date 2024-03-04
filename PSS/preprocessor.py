@@ -1,12 +1,15 @@
 import locale
+import os.path
 import re
 import subprocess
+from pathlib import Path
 
+import angr
 import networkx as nx
 import numpy as np
 
 
-def compute_v(files) -> []:
+def compute_v(files) -> [float]:
     cg_graphs = []
     for file in files:
         cflow = call_cflow(file)
@@ -20,11 +23,13 @@ def compute_v(files) -> []:
     return v
 
 
-def compute_w(files) -> []:
+def compute_w(files, n: int) -> [float]:
     cfg_graphs = []
-    for file in files:
-        ast = construct_ast(file)
-        cfg_graphs += [construct_cfg(ast)]
+    binaries = compile_program(files, n)
+    for binary in binaries:
+        cfg_graphs += [construct_cfg(binary)]
+
+    clear_temporary_dirs()
 
     w = []
     for cfg in cfg_graphs:
@@ -73,9 +78,10 @@ def construct_cg(cflow_str) -> nx.DiGraph:
     return g
 
 
-def construct_cfg(ast) -> nx.DiGraph:
-    cfg = nx.DiGraph()
-    return cfg
+def construct_cfg(binary) -> nx.DiGraph:
+    p = angr.Project(binary, load_options={'auto_load_libs': False})
+    cfg = p.analyses.CFGFast()
+    return cfg.graph
 
 
 def call_cflow(file) -> str:
@@ -91,6 +97,32 @@ def call_cflow(file) -> str:
 
 def construct_ast(file):
     return 0
+
+
+def compile_program(files, n: int) -> [str]:
+    binaries = []
+    gcc = check_dependencies()[1]
+    output_dir = os.path.join("data", "binaries") + str(n)
+    for file in files:
+        gcc_cmd = [gcc, file, '-o']
+        binary = os.path.join(output_dir, Path(file).stem)
+        gcc_cmd += [binary]
+        mkdir_cmd = ['mkdir', '-p', output_dir]
+        subprocess.run(mkdir_cmd)
+        subprocess.run(gcc_cmd)
+        binaries += [binary]
+
+    return binaries
+
+
+def clear_temporary_dirs():
+    path = os.path.join("data", "binaries")
+    for i in range(2):
+        cmd = ['rm', '-rf', (path + str(i))]
+        try:
+            subprocess.check_call(cmd)
+        except subprocess.CalledProcessError:
+            continue
 
 
 def decode(bytes) -> str:
