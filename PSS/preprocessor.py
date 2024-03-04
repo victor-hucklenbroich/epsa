@@ -85,7 +85,6 @@ def construct_cfg(binary) -> nx.DiGraph:
 
 
 def call_cflow(file) -> str:
-    encoding = locale.getdefaultlocale()[1]
     cflow = check_dependencies()[0]
     cflow_cmd = [cflow]
     cflow_cmd += ['-l']
@@ -93,10 +92,6 @@ def call_cflow(file) -> str:
 
     cflow_data = decode(subprocess.check_output(cflow_cmd))
     return cflow_data
-
-
-def construct_ast(file):
-    return 0
 
 
 def compile_program(files, n: int) -> [str]:
