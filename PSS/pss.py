@@ -1,4 +1,5 @@
 import os
+import time
 
 import numpy as np
 
@@ -46,4 +47,6 @@ def compare(p0: str, p1: str) -> float:
 if __name__ == '__main__':
     p0 = os.path.join(DATA_PATH, "p0")
     p1 = os.path.join(DATA_PATH, "p1")
+    start_time = time.time()
     print(PSS_PREFIX + "pss(p0, p1) = " + str(compare(p0, p1)))
+    print(PSS_PREFIX + "execution time: " + str(time.time() - start_time) + " seconds")
