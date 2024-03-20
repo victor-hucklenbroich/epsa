@@ -4,8 +4,8 @@ import os
 import subprocess
 from pathlib import Path
 
-from pss import DATA_PATH
-from pss import PSS_PREFIX
+from demoscript import DATA_PATH
+from demoscript import LOG_PREFIX
 
 
 def get_binaries(p0, p1):
@@ -26,7 +26,7 @@ def search_paths(directory):
 
 
 def compile_program(dir, n: int) -> [str]:
-    print(PSS_PREFIX + "compiling p" + str(n))
+    print(LOG_PREFIX + "compiling p" + str(n))
     if has_makefile(dir):
         return compile_program_cmake(dir, n)
     else:
@@ -54,7 +54,7 @@ def compile_program_cmake(dir, n: int) -> [str]:
                 if include:
                     binaries.append(file)
 
-    print(PSS_PREFIX + "compiled p" + str(n) + " successfully using Makefile")
+    print(LOG_PREFIX + "compiled p" + str(n) + " successfully using Makefile")
     return binaries
 
 
@@ -74,7 +74,7 @@ def compile_program_gcc(dir, n: int) -> [str]:
         subprocess.run(gcc_cmd)
         binaries += [binary]
 
-    print(PSS_PREFIX + "compiled p" + str(n) + " successfully using gcc")
+    print(LOG_PREFIX + "compiled p" + str(n) + " successfully using gcc")
     return binaries
 
 
@@ -86,7 +86,7 @@ def clean():
             if has_makefile(dir):
                 make_clean(dir)
     clear_temporary_dirs()
-    print(PSS_PREFIX + "clean successful")
+    print(LOG_PREFIX + "clean successful")
 
 
 def make_clean(dir):
