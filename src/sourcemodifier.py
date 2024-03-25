@@ -3,6 +3,7 @@ import string
 from enum import Enum
 
 import preprocessor as preproc
+from src import logger
 
 
 class ModMode(Enum):
@@ -35,10 +36,12 @@ def obfuscate(p: str):
             s.write("\n")
             for func in generated_functions:
                 s.write(func["function"])
-                print("Added noise function " + func["name"] + "() to " + source)
+                logger.log("Added noise function " + func["name"] + "() to " + source)
                 noise_added += 1
 
             s.write("\n")
+
+    logger.log("obfuscated sources in " + p + " by adding " + str(noise_added) + " noise functions")
 
 
 def generate_function(available_functions: [dict]) -> dict:

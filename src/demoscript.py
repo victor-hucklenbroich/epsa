@@ -2,8 +2,8 @@ import os
 
 import pss
 import sourcemodifier
+from src import logger
 
-LOG_PREFIX: str = "[PSS] "
 BASE_PATH: str = os.path.join(os.getcwd(), 'data')
 DATA_PATH: str = os.path.join(BASE_PATH, 'o')
 
@@ -24,12 +24,12 @@ def get_project_paths() -> (str, str):
 
 if __name__ == '__main__':
     (p0, p1) = get_project_paths()
-    print(pss.LOG_PREFIX + "Unmodified PSS execution:")
+    logger.log("##### Pre modification execution #####", level=1)
     pss.compare(p0, p1)
 
     mmode = sourcemodifier.ModMode.OBFUSCATE
-    print(LOG_PREFIX + " modifying " + p0 + " using mode: " + mmode.value)
+    logger.log("modifying " + p0 + "using mode " + mmode.value)
     sourcemodifier.modify(p0, mode=mmode)
 
-    print(pss.LOG_PREFIX + "Modified PSS execution:")
+    logger.log("##### Post modification execution #####", level=1)
     pss.compare(p0, p1)

@@ -11,7 +11,7 @@ import networkx as nx
 import numpy as np
 
 from demoscript import DATA_PATH
-from demoscript import LOG_PREFIX
+from src import logger
 
 
 def compute_v(binaries) -> [float]:
@@ -73,14 +73,14 @@ def search_paths(directory):
         for file in files:
             if file.endswith('.c') | file.endswith('.cpp'):
                 path = os.path.join(root, file)
-                print(path)
+                logger.log("Found source: " + path)
                 paths.append(path)
 
     return paths
 
 
 def compile_program(dir, n: int) -> [str]:
-    print(LOG_PREFIX + "compiling p" + str(n))
+    logger.log("compiling p" + str(n))
     if has_makefile(dir):
         return compile_program_cmake(dir, n)
     else:
@@ -108,7 +108,7 @@ def compile_program_cmake(dir, n: int) -> [str]:
                 if include:
                     binaries.append(file)
 
-    print(LOG_PREFIX + "compiled p" + str(n) + " successfully using Makefile")
+    logger.log("compiled p" + str(n) + " successfully using Makefile", level=1)
     return binaries
 
 
@@ -122,13 +122,13 @@ def compile_program_gcc(dir, n: int) -> [str]:
         binary = os.path.join(output_dir, Path(file).stem)
         gcc_cmd += [binary]
         mkdir_cmd = ['mkdir', '-p', output_dir]
-        print(mkdir_cmd)
+        logger.log(mkdir_cmd)
         subprocess.run(mkdir_cmd)
-        print(gcc_cmd)
+        logger.log(gcc_cmd)
         subprocess.run(gcc_cmd)
         binaries += [binary]
 
-    print(LOG_PREFIX + "compiled p" + str(n) + " successfully using gcc")
+    logger.log("compiled p" + str(n) + " successfully using gcc", level=1)
     return binaries
 
 
@@ -136,28 +136,19 @@ def clean():
     path = DATA_PATH
     if has_archive(path):
         replace_data_with_archive(path)
-        print(LOG_PREFIX + "replaced test data with archives")
+        logger.log("replaced test data with available archives", level=1)
     for dirs in os.walk(path):
         for dir in dirs[1]:
             dir = os.path.join(path, dir)
             if has_makefile(dir):
                 make_clean(dir)
     clear_temporary_dirs()
-    print(LOG_PREFIX + "clean successful")
+    logger.log("clean successful", level=1)
 
 
 def has_archive(data_path) -> bool:
     data_archive = data_path + ".zip"
-    if not zipfile.is_zipfile(data_archive):
-        return False
-
-    z = zipfile.ZipFile(data_archive)
-    for dirs in os.walk(data_path):
-        for dir in dirs[1]:
-            if dir not in z.namelist():
-                return False
-
-    return True
+    return zipfile.is_zipfile(data_archive)
 
 
 def replace_data_with_archive(data_path):
