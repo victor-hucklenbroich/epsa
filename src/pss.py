@@ -1,11 +1,8 @@
-import os
 import time
 
 import numpy as np
 
 import preprocessor as preproc
-import projectprocessor
-
 from demoscript import LOG_PREFIX
 
 
@@ -19,10 +16,10 @@ def compute_similarity(feat0, feat1) -> float:
 
 def sim_cg(b0: str, b1: str) -> float:
     print(LOG_PREFIX + "calculating feature vector v0")
-    v0: list = np.ndarray.tolist(preproc.compute_v(b0))[0]
+    v0: list = preproc.compute_v(b0)[0]
     print(LOG_PREFIX + "v0:" + str(v0))
     print(LOG_PREFIX + "calculating feature vector v1")
-    v1: list = np.ndarray.tolist(preproc.compute_v(b1))[0]
+    v1: list = preproc.compute_v(b1)[0]
     print(LOG_PREFIX + "v1:" + str(v1))
     sim: float = compute_similarity(v0, v1)
     print(LOG_PREFIX + "simCG(p0, p1) = " + str(sim))
@@ -43,7 +40,7 @@ def sim_cfg(b0: str, b1: str) -> float:
 
 def compare(p0: str, p1: str) -> float:
     start_time = time.time()
-    (b0, b1) = projectprocessor.get_binaries(p0, p1)
+    (b0, b1) = preproc.get_binaries(p0, p1)
     pss_value = (sim_cg(b0, b1) + sim_cfg(b0, b1)) / (2 * np.sqrt(2))
     print(LOG_PREFIX + "pss(p0, p1) = " + str(pss_value))
     print(LOG_PREFIX + "execution time (including compilation): " + str(time.time() - start_time) + " seconds")

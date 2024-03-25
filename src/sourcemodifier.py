@@ -1,5 +1,7 @@
 from enum import Enum
 
+import preprocessor as preproc
+
 ModMode = Enum('Harmonize', 'Obfuscate')
 
 
@@ -17,4 +19,6 @@ def harmonize(p0: str, p1: str):
 
 
 def obfuscate(p: str):
+    sources: [str] = preproc.search_paths(p)
     pass
+
