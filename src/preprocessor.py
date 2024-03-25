@@ -1,7 +1,9 @@
 import locale
 import mimetypes
 import os
+import shutil
 import subprocess
+import zipfile
 from pathlib import Path
 
 import angr
@@ -132,6 +134,9 @@ def compile_program_gcc(dir, n: int) -> [str]:
 
 def clean():
     path = DATA_PATH
+    if has_archive(path):
+        replace_data_with_archive(path)
+        print(LOG_PREFIX + "replaced test data with archives")
     for dirs in os.walk(path):
         for dir in dirs[1]:
             dir = os.path.join(path, dir)
@@ -139,6 +144,32 @@ def clean():
                 make_clean(dir)
     clear_temporary_dirs()
     print(LOG_PREFIX + "clean successful")
+
+
+def has_archive(data_path) -> bool:
+    data_archive = data_path + ".zip"
+    if not zipfile.is_zipfile(data_archive):
+        return False
+
+    z = zipfile.ZipFile(data_archive)
+    for dirs in os.walk(data_path):
+        for dir in dirs[1]:
+            if dir not in z.namelist():
+                return False
+
+    return True
+
+
+def replace_data_with_archive(data_path):
+    cmd = ['rm', '-rf', data_path]
+    subprocess.check_output(cmd)
+    data_archive = data_path + ".zip"
+    shutil.unpack_archive(data_archive, data_path)
+
+
+def has_makefile(dir) -> bool:
+    makefile = os.path.join(dir, "Makefile")
+    return os.path.isfile(makefile)
 
 
 def make_clean(dir):
@@ -160,11 +191,6 @@ def clear_temporary_dirs():
 def decode(bytes) -> str:
     encoding = locale.getdefaultlocale()[1]
     return bytes.decode(encoding)
-
-
-def has_makefile(dir) -> bool:
-    makefile = os.path.join(dir, "Makefile")
-    return os.path.isfile(makefile)
 
 
 def check_dependencies():

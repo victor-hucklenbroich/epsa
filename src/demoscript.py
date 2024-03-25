@@ -5,7 +5,7 @@ import sourcemodifier
 
 LOG_PREFIX: str = "[PSS] "
 BASE_PATH: str = os.path.join(os.getcwd(), 'data')
-DATA_PATH: str = BASE_PATH
+DATA_PATH: str = os.path.join(BASE_PATH, 'o')
 
 
 def obfuscation_demo():
@@ -23,13 +23,13 @@ def get_project_paths() -> (str, str):
 
 
 if __name__ == '__main__':
-    DATA_PATH = os.path.join(BASE_PATH, 'o')
     (p0, p1) = get_project_paths()
     print(pss.LOG_PREFIX + "Unmodified PSS execution:")
     pss.compare(p0, p1)
 
-    print(LOG_PREFIX + "Obfuscating p0")
-    sourcemodifier.modify(p0)
+    mmode = sourcemodifier.ModMode.OBFUSCATE
+    print(LOG_PREFIX + " modifying " + p0 + " using mode: " + mmode.value)
+    sourcemodifier.modify(p0, mode=mmode)
 
     print(pss.LOG_PREFIX + "Modified PSS execution:")
     pss.compare(p0, p1)

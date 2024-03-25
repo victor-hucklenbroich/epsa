@@ -1,17 +1,22 @@
+import random
+import string
 from enum import Enum
 
 import preprocessor as preproc
 
-ModMode = Enum('Harmonize', 'Obfuscate')
+
+class ModMode(Enum):
+    OBFUSCATE = 'OBFUSCATE'
+    HARMONIZE = 'HARMONIZE'
 
 
-def modify(*p: str, mode: ModMode = 'Obfuscate'):
-    if mode is 'Obfuscate':
+def modify(*p: str, mode: ModMode = ModMode.OBFUSCATE) -> str:
+    if mode is ModMode.OBFUSCATE:
         obfuscate(p[0])
-    elif mode is 'Harmonize':
+    elif mode is ModMode.HARMONIZE:
         harmonize(p[0], p[1])
-    else:
-        pass
+
+    return mode.value
 
 
 def harmonize(p0: str, p1: str):
@@ -20,5 +25,37 @@ def harmonize(p0: str, p1: str):
 
 def obfuscate(p: str):
     sources: [str] = preproc.search_paths(p)
-    pass
+    noise_added: int = 0
+    for source in sources:
+        generated_functions = []
+        for i in range(random.randint(10, 100)):
+            generated_functions += [generate_function(generated_functions)]
 
+        with open(source, "a") as s:
+            s.write("\n")
+            for func in generated_functions:
+                s.write(func["function"])
+                print("Added noise function " + func["name"] + "() to " + source)
+                noise_added += 1
+
+            s.write("\n")
+
+
+def generate_function(available_functions: [dict]) -> dict:
+    return_types = ['void', 'int', 'char']
+    f_name: str = ''.join(random.choice(string.ascii_letters) for i in range(random.randint(5, 10)))
+    f_return: str = random.choice(return_types)
+    f_def: str = f_return + ' ' + f_name + '() { '
+    if available_functions:
+        for i in range(random.randint(0, 10)):
+            call_f = random.choice(available_functions)
+            f_def += call_f["name"]
+            f_def += '(); '
+
+    if f_return == 'void':
+        pass
+    else:
+        f_def += 'return 0; '
+
+    f_def += '} \n'
+    return dict(name=f_name, return_type=f_return, function=f_def)
