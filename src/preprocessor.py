@@ -10,7 +10,7 @@ import angr
 import networkx as nx
 import numpy as np
 
-from demoscript import DATA_PATH
+from constants import PROJECTS_PATH
 from src import logger
 
 
@@ -115,7 +115,7 @@ def compile_program_gcc(dir, n: int) -> [str]:
     files = search_paths(dir)
     binaries = []
     gcc = check_dependencies()[0]
-    output_dir = os.path.join(DATA_PATH, "binaries") + str(n)
+    output_dir = os.path.join(PROJECTS_PATH, "binaries") + str(n)
     for file in files:
         gcc_cmd = [gcc, file, '-o']
         binary = os.path.join(output_dir, Path(file).stem)
@@ -132,7 +132,7 @@ def compile_program_gcc(dir, n: int) -> [str]:
 
 
 def clean(replace_with_archives=False):
-    path = DATA_PATH
+    path = PROJECTS_PATH
     if replace_with_archives and has_archive(path):
         replace_data_with_archive(path)
         logger.log("replaced test data with available archives", level=1)
@@ -169,7 +169,7 @@ def make_clean(dir):
 
 
 def clear_temporary_dirs():
-    path = os.path.join(DATA_PATH, "binaries")
+    path = os.path.join(PROJECTS_PATH, "binaries")
     for i in range(2):
         cmd = ['rm', '-rf', (path + str(i))]
         try:

@@ -1,11 +1,10 @@
 import os
-import pathlib
 import subprocess
 from datetime import datetime
 
-LOG_DIR = os.path.join(os.getcwd(), 'logs')
-LOG_FILE = os.path.join(LOG_DIR, datetime.now().ctime().strip() + '.log')
-LOG_PREFIX: str = "[PSS] "
+from constants import LOG_DIR
+from constants import LOG_FILE
+from constants import LOG_PREFIX
 
 
 def log(s: str, level: int = 0):
