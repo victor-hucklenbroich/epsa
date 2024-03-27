@@ -5,8 +5,6 @@ from enum import Enum
 import preprocessor as preproc
 from src import logger
 
-AMOUNT_OF_NOISE: int = 100
-
 
 class ModMode(Enum):
     OBFUSCATE = 'OBFUSCATE'
@@ -26,12 +24,16 @@ def harmonize(p0: str, p1: str):
     pass
 
 
-def obfuscate(p: str):
+def obfuscate(p: str, noise_per_loc: float = 0.1):
+    logger.log("noise per LOC: " + str(noise_per_loc), level=1)
     sources: [str] = preproc.search_paths(p)
     noise_added: int = 0
     for source in sources:
+        with open(source, 'r') as s:
+            for count, line in enumerate(s):
+                pass
         generated_functions = []
-        for i in range(AMOUNT_OF_NOISE):
+        for i in range(int(count * noise_per_loc)):
             generated_functions += [generate_function(generated_functions)]
 
         with open(source, "a") as s:
