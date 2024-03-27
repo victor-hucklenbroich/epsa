@@ -1,4 +1,5 @@
 import os
+import pathlib
 import subprocess
 from datetime import datetime
 
@@ -8,7 +9,11 @@ LOG_PREFIX: str = "[PSS] "
 
 
 def log(s: str, level: int = 0):
-    content = LOG_PREFIX + s
+    content = ''
+    if not os.path.isfile(LOG_FILE):
+        content += "LOG started: " + str(datetime.now()) + "\n"
+
+    content += LOG_PREFIX + s
     if level >= 1:
         try:
             with open(LOG_FILE, "a") as file:

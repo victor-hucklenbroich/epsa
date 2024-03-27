@@ -5,6 +5,8 @@ from enum import Enum
 import preprocessor as preproc
 from src import logger
 
+AMOUNT_OF_NOISE: int = 100
+
 
 class ModMode(Enum):
     OBFUSCATE = 'OBFUSCATE'
@@ -29,7 +31,7 @@ def obfuscate(p: str):
     noise_added: int = 0
     for source in sources:
         generated_functions = []
-        for i in range(random.randint(10, 100)):
+        for i in range(AMOUNT_OF_NOISE):
             generated_functions += [generate_function(generated_functions)]
 
         with open(source, "a") as s:
@@ -41,7 +43,7 @@ def obfuscate(p: str):
 
             s.write("\n")
 
-    logger.log("obfuscated sources in " + p + " by adding " + str(noise_added) + " noise functions")
+    logger.log("obfuscated sources in " + p + " by adding " + str(noise_added) + " noise functions\n", level=1)
 
 
 def generate_function(available_functions: [dict]) -> dict:

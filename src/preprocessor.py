@@ -63,7 +63,6 @@ def init_angr(binary) -> angr.Project:
 
 
 def get_binaries(p0, p1):
-    clean()
     return compile_program(p0, 0), compile_program(p1, 1)
 
 
@@ -132,9 +131,9 @@ def compile_program_gcc(dir, n: int) -> [str]:
     return binaries
 
 
-def clean():
+def clean(replace_with_archives=False):
     path = DATA_PATH
-    if has_archive(path):
+    if replace_with_archives and has_archive(path):
         replace_data_with_archive(path)
         logger.log("replaced test data with available archives", level=1)
     for dirs in os.walk(path):

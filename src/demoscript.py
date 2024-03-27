@@ -2,6 +2,8 @@ import os
 
 import pss
 import sourcemodifier
+
+import preprocessor as preproc
 from src import logger
 
 BASE_PATH: str = os.path.join(os.getcwd(), 'data')
@@ -23,13 +25,16 @@ def get_project_paths() -> (str, str):
 
 
 if __name__ == '__main__':
+    preproc.clean(replace_with_archives=True)
     (p0, p1) = get_project_paths()
-    logger.log("##### Pre modification execution #####", level=1)
+    logger.log("########################################## Pre modification execution ##########################################\n", level=1)
     pss.compare(p0, p1)
-
+    logger.log("############################################# Source modification ##############################################\n", level=1)
     mmode = sourcemodifier.ModMode.OBFUSCATE
     logger.log("modifying " + p0 + "using mode " + mmode.value)
     sourcemodifier.modify(p0, mode=mmode)
 
-    logger.log("##### Post modification execution #####", level=1)
+    logger.log("########################################## Post modification execution ##########################################\n", level=1)
+    preproc.clean()
     pss.compare(p0, p1)
+
