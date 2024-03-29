@@ -13,6 +13,20 @@ LOG_FILE = os.path.join(LOG_DIR, datetime.now().ctime().strip() + '.log')
 LOG_PREFIX: str = "[PSS] "
 
 
+# Dependencies
+def check_dependency(dependency: str):
+    path = decode(subprocess.check_output(['which', dependency]))
+    if path.find(dependency) < 0:
+        raise Exception(dependency + ' not found in $PATH.')
+    else:
+        return path.replace('\n', '')
+
+
+def decode(bytes) -> str:
+    encoding = locale.getdefaultlocale()[1]
+    return bytes.decode(encoding)
+
+
 def gcc():
     return check_dependency('gcc')
 
@@ -23,16 +37,3 @@ def make():
 
 def scc():
     return check_dependency('scc')
-
-
-def decode(bytes) -> str:
-    encoding = locale.getdefaultlocale()[1]
-    return bytes.decode(encoding)
-
-
-def check_dependency(dependency: str):
-    path = decode(subprocess.check_output(['which', dependency]))
-    if path.find(dependency) < 0:
-        raise Exception(dependency + ' not found in $PATH.')
-    else:
-        return path.replace('\n', '')
