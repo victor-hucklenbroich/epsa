@@ -1,4 +1,3 @@
-import locale
 import mimetypes
 import os
 import shutil
@@ -11,7 +10,7 @@ import networkx as nx
 import numpy as np
 
 from constants import PROJECTS_PATH
-from src import logger
+from src import logger, constants
 
 
 def compute_v(binaries) -> [float]:
@@ -89,7 +88,7 @@ def compile_program(dir, n: int) -> [str]:
 def compile_program_cmake(dir, n: int) -> [str]:
     binaries = []
     exclusions = ['.DS_Store', 'Makefile', 'README', '.1', '.hpp', 'c']
-    make = check_dependencies()[1]
+    make = constants.make()
     make_cmd = [make, 'all']
     subprocess.run(make_cmd, cwd=dir)
     dir = os.path.join(dir, 'src')
@@ -114,7 +113,7 @@ def compile_program_cmake(dir, n: int) -> [str]:
 def compile_program_gcc(dir, n: int) -> [str]:
     files = search_paths(dir)
     binaries = []
-    gcc = check_dependencies()[0]
+    gcc = constants.gcc()
     output_dir = os.path.join(PROJECTS_PATH, "binaries") + str(n)
     for file in files:
         gcc_cmd = [gcc, file, '-o']
@@ -163,7 +162,7 @@ def has_makefile(dir) -> bool:
 
 
 def make_clean(dir):
-    make = check_dependencies()[1]
+    make = constants.make()
     make_cmd = [make, 'clean']
     subprocess.check_output(make_cmd, cwd=dir)
 
@@ -176,23 +175,3 @@ def clear_temporary_dirs():
             subprocess.check_output(cmd)
         except subprocess.CalledProcessError:
             continue
-
-
-def decode(bytes) -> str:
-    encoding = locale.getdefaultlocale()[1]
-    return bytes.decode(encoding)
-
-
-def check_dependencies():
-    required = ['gcc', 'make']
-
-    dependencies = []
-    for dependency in required:
-        path = decode(subprocess.check_output(['which', dependency]))
-
-        if path.find(dependency) < 0:
-            raise Exception(dependency + ' not found in $PATH.')
-        else:
-            dependencies += [path.replace('\n', '')]
-
-    return dependencies
