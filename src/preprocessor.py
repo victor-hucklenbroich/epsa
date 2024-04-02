@@ -58,7 +58,9 @@ def construct_cfgs(binary) -> [nx.DiGraph]:
 
 
 def init_angr(binary) -> angr.Project:
-    return angr.Project(binary, load_options={'auto_load_libs': False})
+    proj: angr.Project = angr.Project(binary, load_options={'auto_load_libs': False})
+    logger.log("initialised angr: " + str(proj))
+    return proj
 
 
 def get_binaries(p0, p1):
@@ -86,11 +88,17 @@ def compile_program(dir, n: int) -> [str]:
 
 
 def compile_program_cmake(dir, n: int) -> [str]:
-    binaries = []
-    exclusions = ['.DS_Store', 'Makefile', 'README', '.1', '.hpp', 'c']
+
     make = constants.make()
     make_cmd = [make, 'all']
     subprocess.run(make_cmd, cwd=dir)
+    logger.log("compiled p" + str(n) + " successfully using Makefile", level=1)
+    return find_binaries(dir)
+
+
+def find_binaries(dir) -> [str]:
+    binaries = []
+    exclusions = ['.DS_Store', 'Makefile', 'README', '.1', '.hpp', 'c']
     dir = os.path.join(dir, 'src')
     for root, dirs, files in os.walk(dir):
         for file in files:
@@ -106,7 +114,6 @@ def compile_program_cmake(dir, n: int) -> [str]:
                 if include:
                     binaries.append(file)
 
-    logger.log("compiled p" + str(n) + " successfully using Makefile", level=1)
     return binaries
 
 
