@@ -26,7 +26,7 @@ def obfuscate(p: str, noise_per_loc: float = 0.1):
 
             s.write("\n")
 
-    logger.log("obfuscated sources in " + p + " by adding " + str(noise_added) + " noise functions\n", level=1)
+    logger.log("obfuscated sources in " + p + " by adding " + str(noise_added) + " noise functions", level=1)
 
 
 def generate_function(available_functions: [dict]) -> dict:

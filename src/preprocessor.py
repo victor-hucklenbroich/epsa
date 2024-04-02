@@ -1,7 +1,9 @@
 import mimetypes
 import os
+import pathlib
 import shutil
 import subprocess
+import time
 import zipfile
 from pathlib import Path
 
@@ -9,7 +11,6 @@ import angr
 import networkx as nx
 import numpy as np
 
-from constants import PROJECTS_PATH
 from src import logger, constants
 
 
@@ -58,8 +59,9 @@ def construct_cfgs(binary) -> [nx.DiGraph]:
 
 
 def init_angr(binary) -> angr.Project:
+    start_time = time.time()
     proj: angr.Project = angr.Project(binary, load_options={'auto_load_libs': False})
-    logger.log("initialised angr: " + str(proj))
+    logger.log("initialised angr: " + str(proj) + " in " + str(round(time.time() - start_time, 2)) + " seconds")
     return proj
 
 
@@ -88,7 +90,6 @@ def compile_program(dir, n: int) -> [str]:
 
 
 def compile_program_cmake(dir, n: int) -> [str]:
-
     make = constants.make()
     make_cmd = [make, 'all']
     subprocess.run(make_cmd, cwd=dir)
@@ -121,7 +122,8 @@ def compile_program_gcc(dir, n: int) -> [str]:
     files = search_paths(dir)
     binaries = []
     gcc = constants.gcc()
-    output_dir = os.path.join(PROJECTS_PATH, "binaries") + str(n)
+    path = pathlib.Path(dir).parent.absolute()
+    output_dir = os.path.join(path, "binaries") + str(n)
     for file in files:
         gcc_cmd = [gcc, file, '-o']
         binary = os.path.join(output_dir, Path(file).stem)
@@ -137,18 +139,16 @@ def compile_program_gcc(dir, n: int) -> [str]:
     return binaries
 
 
-def clean(replace_with_archives=False):
-    path = PROJECTS_PATH
+def clean(path: str, replace_with_archives=False):
     if replace_with_archives and has_archive(path):
         replace_data_with_archive(path)
-        logger.log("replaced test data with available archives", level=1)
     for dirs in os.walk(path):
         for dir in dirs[1]:
             dir = os.path.join(path, dir)
             if has_makefile(dir):
                 make_clean(dir)
-    clear_temporary_dirs()
-    logger.log("clean successful", level=1)
+    clear_temporary_dirs(path)
+    logger.log("clean successful\n", level=1)
 
 
 def has_archive(data_path) -> bool:
@@ -161,6 +161,7 @@ def replace_data_with_archive(data_path):
     subprocess.check_output(cmd)
     data_archive = data_path + ".zip"
     shutil.unpack_archive(data_archive, data_path)
+    logger.log("replaced test data with available archives: " + data_archive, level=1)
 
 
 def has_makefile(dir) -> bool:
@@ -174,8 +175,8 @@ def make_clean(dir):
     subprocess.check_output(make_cmd, cwd=dir)
 
 
-def clear_temporary_dirs():
-    path = os.path.join(PROJECTS_PATH, "binaries")
+def clear_temporary_dirs(path: str):
+    path = os.path.join(path, "binaries")
     for i in range(2):
         cmd = ['rm', '-rf', (path + str(i))]
         try:

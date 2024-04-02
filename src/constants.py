@@ -5,7 +5,6 @@ from datetime import datetime
 
 # Test data
 BASE_DATA_PATH: str = os.path.join(os.getcwd(), 'data')
-PROJECTS_PATH: str = os.path.join(BASE_DATA_PATH, 'o')
 
 # Logging
 LOG_DIR = os.path.join(os.getcwd(), 'logs')
