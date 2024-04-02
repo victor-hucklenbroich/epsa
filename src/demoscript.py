@@ -1,5 +1,6 @@
 import os
 import time
+from pathlib import Path
 
 import preprocessor as preproc
 import pss
@@ -10,11 +11,11 @@ from src import logger
 
 
 def demo(mmode: ModMode):
-    path: str
+    path: Path
     if mmode is ModMode.OBFUSCATE:
-        path = os.path.join(BASE_DATA_PATH, 'o')
+        path = Path(os.path.join(BASE_DATA_PATH, 'o'))
     elif mmode is ModMode.HARMONIZE:
-        path = os.path.join(BASE_DATA_PATH, 'h')
+        path = Path(os.path.join(BASE_DATA_PATH, 'h'))
 
     preproc.clean(path, replace_with_archives=True)
     (p0, p1) = get_project_paths(path)

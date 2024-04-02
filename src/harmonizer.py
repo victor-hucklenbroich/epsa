@@ -1,3 +1,5 @@
+import pathlib
+
 import networkx as nx
 
 import preprocessor as preproc
@@ -15,6 +17,6 @@ def construct_graphs(p0: str, p1: str) -> (nx.MultiGraph, nx.MultiGraph):
         return cg0, cg1
     except Exception:
         print("EXCEPTION CLAUSE")
-        preproc.clean()
+        preproc.clean(pathlib.Path(p0).parent.absolute())
         preproc.get_binaries(p0, p1)
         return construct_graphs(p0, p1)
