@@ -90,10 +90,12 @@ def compile_program(dir, n: int) -> [str]:
 
 
 def compile_program_cmake(dir, n: int) -> [str]:
+    start_time = time.time()
     make = constants.make()
     make_cmd = [make, 'all']
     subprocess.run(make_cmd, cwd=dir)
-    logger.log("compiled p" + str(n) + " successfully using Makefile", level=1)
+    logger.log("compiled p" + str(n) +
+               " successfully using Makefile in " + str(round(time.time() - start_time, 2)) + " seconds", level=1)
     return find_binaries(dir)
 
 
@@ -119,6 +121,7 @@ def find_binaries(dir) -> [str]:
 
 
 def compile_program_gcc(dir, n: int) -> [str]:
+    start_time = time.time()
     files = search_paths(dir)
     binaries = []
     gcc = constants.gcc()
@@ -135,7 +138,8 @@ def compile_program_gcc(dir, n: int) -> [str]:
         subprocess.run(gcc_cmd)
         binaries += [binary]
 
-    logger.log("compiled p" + str(n) + " successfully using gcc", level=1)
+    logger.log("compiled p" + str(n) +
+               " successfully using gcc in " + str(round(time.time() - start_time, 2)) + " seconds", level=1)
     return binaries
 
 
