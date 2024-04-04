@@ -58,4 +58,4 @@ def get_project_paths(projectspath: str) -> (str, str):
 
 
 if __name__ == '__main__':
-    harmonization_demo()
+    obfuscation_demo()

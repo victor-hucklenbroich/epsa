@@ -152,6 +152,7 @@ def clean(path: Path, replace_with_archives=False, clean_with_make=True):
                 dir = os.path.join(path, dir)
                 if has_makefile(dir):
                     make_clean(dir)
+                    logger.log("removed binary and .o files in " + dir, level=1)
 
     clear_temporary_dirs(str(path))
     logger.log("clean successful\n", level=1)
