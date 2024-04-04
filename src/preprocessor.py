@@ -143,14 +143,16 @@ def compile_program_gcc(dir, n: int) -> [str]:
     return binaries
 
 
-def clean(path: Path, replace_with_archives=False):
+def clean(path: Path, replace_with_archives=False, clean_with_make=True):
     if replace_with_archives and has_archive(str(path)):
         replace_data_with_archive(str(path))
-    for dirs in os.walk(path):
-        for dir in dirs[1]:
-            dir = os.path.join(path, dir)
-            if has_makefile(dir):
-                make_clean(dir)
+    if clean_with_make:
+        for dirs in os.walk(path):
+            for dir in dirs[1]:
+                dir = os.path.join(path, dir)
+                if has_makefile(dir):
+                    make_clean(dir)
+
     clear_temporary_dirs(str(path))
     logger.log("clean successful\n", level=1)
 

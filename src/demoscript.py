@@ -14,10 +14,11 @@ def demo(mmode: ModMode):
     path: Path
     if mmode is ModMode.OBFUSCATE:
         path = Path(os.path.join(BASE_DATA_PATH, 'o'))
+        preproc.clean(path, replace_with_archives=True)
     elif mmode is ModMode.HARMONIZE:
         path = Path(os.path.join(BASE_DATA_PATH, 'h'))
+        preproc.clean(path, replace_with_archives=True, clean_with_make=False)
 
-    preproc.clean(path, replace_with_archives=True)
     (p0, p1) = get_project_paths(path)
     logger.log(
         "########################################## Pre modification execution ##########################################\n",
@@ -28,7 +29,11 @@ def demo(mmode: ModMode):
         level=1)
     logger.log("modifying " + p0 + "using mode " + mmode.value)
     start_time = time.time()
-    sourcemodifier.modify(p0, mode=mmode)
+    if mmode is ModMode.OBFUSCATE:
+        sourcemodifier.modify(p0, mode=mmode)
+    elif mmode is ModMode.HARMONIZE:
+        sourcemodifier.modify(p0, p1, mode=mmode)
+
     logger.log("modification took " + str(round(time.time() - start_time, 2)) + " seconds\n", level=1)
 
     logger.log(
@@ -53,4 +58,4 @@ def get_project_paths(projectspath: str) -> (str, str):
 
 
 if __name__ == '__main__':
-    obfuscation_demo()
+    harmonization_demo()
