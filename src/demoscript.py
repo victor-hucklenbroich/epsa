@@ -34,7 +34,8 @@ def demo(mmode: ModMode):
     elif mmode is ModMode.HARMONIZE:
         sourcemodifier.modify(p0, p1, mode=mmode)
 
-    logger.log("modification took " + str(round(time.time() - start_time, 2)) + " seconds\n", level=1)
+    logger.log("modification took " + str(round(time.time() - start_time, 2)) + " seconds\n", level=1,
+               prefix=LOG_PREFIX_MOD)
 
     logger.log(
         "########################################## Post modification execution ##########################################\n",
