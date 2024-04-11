@@ -4,15 +4,15 @@ from datetime import datetime
 
 from constants import LOG_DIR
 from constants import LOG_FILE
-from constants import LOG_PREFIX
+from constants import LOG_PREFIX_PSS
 
 
-def log(s: str, level: int = 0):
+def log(s: str, level: int = 0, prefix: str = LOG_PREFIX_PSS):
     content = ''
     if not os.path.isfile(LOG_FILE):
         content += "LOG started: " + str(datetime.now()) + "\n"
 
-    content += LOG_PREFIX + s
+    content += prefix + s
     if level >= 1:
         try:
             with open(LOG_FILE, "a") as file:

@@ -5,7 +5,7 @@ from pathlib import Path
 import preprocessor as preproc
 import pss
 import sourcemodifier
-from constants import BASE_DATA_PATH
+from constants import BASE_DATA_PATH, LOG_PREFIX_MOD
 from sourcemodifier import ModMode
 from src import logger
 
@@ -26,7 +26,7 @@ def demo(mmode: ModMode):
     pss.compare(p0, p1)
     logger.log(
         "############################################# Source modification ##############################################\n",
-        level=1)
+        level=1, prefix=LOG_PREFIX_MOD)
     logger.log("modifying " + p0 + "using mode " + mmode.value)
     start_time = time.time()
     if mmode is ModMode.OBFUSCATE:

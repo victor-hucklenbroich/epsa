@@ -8,7 +8,7 @@ from src import logger, constants
 
 
 def obfuscate(p: str, noise_per_loc: float = 0.1):
-    logger.log("noise per LOC: " + str(noise_per_loc), level=1)
+    logger.log("noise per LOC: " + str(noise_per_loc), level=1, prefix=constants.LOG_PREFIX_MOD)
     sources: [str] = preproc.search_paths(p)
     noise_added: int = 0
     for source in sources:
@@ -26,7 +26,8 @@ def obfuscate(p: str, noise_per_loc: float = 0.1):
 
             s.write("\n")
 
-    logger.log("obfuscated sources in " + p + " by adding " + str(noise_added) + " noise functions", level=1)
+    logger.log("obfuscated sources in " + p + " by adding " + str(noise_added) + " noise functions", level=1,
+               prefix=constants.LOG_PREFIX_MOD)
 
 
 def generate_function(available_functions: [dict]) -> dict:
