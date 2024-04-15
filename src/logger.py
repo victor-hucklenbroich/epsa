@@ -1,10 +1,19 @@
 import os
 import subprocess
 from datetime import datetime
+from enum import Enum
 
 from constants import LOG_DIR
 from constants import LOG_FILE
 from constants import LOG_PREFIX_PSS
+
+
+class LogLevel(Enum):
+    INFO = 1
+    ALL = 0
+
+
+LOG_LEVEL: LogLevel = LogLevel.INFO
 
 
 def log(s: str, level: int = 0, prefix: str = LOG_PREFIX_PSS):
@@ -13,7 +22,7 @@ def log(s: str, level: int = 0, prefix: str = LOG_PREFIX_PSS):
         content += "LOG started: " + str(datetime.now()) + "\n"
 
     content += prefix + s
-    if level >= 1:
+    if level >= LOG_LEVEL.value:
         try:
             with open(LOG_FILE, "a") as file:
                 file.write(content + "\n")
