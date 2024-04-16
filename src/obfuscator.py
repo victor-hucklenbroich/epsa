@@ -85,7 +85,7 @@ def generate_calls(source: str, lines: [str], functions: [dict]) -> int:
             line = line[:len(line) - 1]
             line += " " + function + "\n"
             logger.log("Modified line " + str(
-                i + len(functions) + 1) + " in " + source + " by adding call to noise function " + function,
+                i + len(functions) + 1) + " (" + str(i + 1) + ") in " + source + " by adding call to noise function " + function,
                        prefix=constants.LOG_PREFIX_MOD)
             calls_added += 1
         lines[i] = line
