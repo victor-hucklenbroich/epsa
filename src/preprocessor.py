@@ -52,7 +52,7 @@ def construct_cg(binary) -> nx.MultiGraph:
 def construct_cfgs(binary) -> [nx.DiGraph]:
     cfgs = []
     p = init_angr(binary)
-    p.analyses.CFGEmulated()
+    p.analyses.CFGEmulated(show_progressbar=True)
     for function in p.kb.functions.items():
         cfgs += [function[1].transition_graph]
     return cfgs
@@ -82,7 +82,7 @@ def search_paths(directory):
 
 
 def compile_program(dir, n: int) -> [str]:
-    logger.log("compiling p" + str(n))
+    logger.log("compiling p" + str(n), prefix=constants.LOG_PREFIX_PRE)
     if has_makefile(dir):
         return compile_program_cmake(dir, n)
     else:
@@ -95,7 +95,7 @@ def compile_program_cmake(dir, n: int) -> [str]:
     make_cmd = [make, 'all']
     subprocess.run(make_cmd, cwd=dir)
     logger.log("compiled p" + str(n) +
-               " successfully using Makefile in " + str(round(time.time() - start_time, 2)) + " seconds", level=1)
+               " successfully using Makefile in " + str(round(time.time() - start_time, 2)) + " seconds", level=1, prefix=constants.LOG_PREFIX_PRE)
     return find_binaries(dir)
 
 
@@ -139,7 +139,7 @@ def compile_program_gcc(dir, n: int) -> [str]:
         binaries += [binary]
 
     logger.log("compiled p" + str(n) +
-               " successfully using gcc in " + str(round(time.time() - start_time, 2)) + " seconds", level=1)
+               " successfully using gcc in " + str(round(time.time() - start_time, 2)) + " seconds", level=1, prefix=constants.LOG_PREFIX_PRE)
     return binaries
 
 
@@ -152,10 +152,10 @@ def clean(path: Path, replace_with_archives=False, clean_with_make=True):
                 dir = os.path.join(path, dir)
                 if has_makefile(dir):
                     make_clean(dir)
-                    logger.log("removed binary and .o files in " + dir, level=1)
+                    logger.log("removed binary and .o files in " + dir, level=1, prefix=constants.LOG_PREFIX_PRE)
 
     clear_temporary_dirs(str(path))
-    logger.log("clean successful\n", level=1)
+    logger.log("clean successful\n", level=1, prefix=constants.LOG_PREFIX_PRE)
 
 
 def has_archive(data_path) -> bool:
@@ -168,7 +168,7 @@ def replace_data_with_archive(data_path):
     subprocess.check_output(cmd)
     data_archive = data_path + ".zip"
     shutil.unpack_archive(data_archive, data_path)
-    logger.log("replaced test data with available archives: " + data_archive, level=1)
+    logger.log("replaced test data with available archives: " + data_archive, level=1, prefix=constants.LOG_PREFIX_PRE)
 
 
 def has_makefile(dir) -> bool:
