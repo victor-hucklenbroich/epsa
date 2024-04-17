@@ -7,62 +7,7 @@ import time
 import zipfile
 from pathlib import Path
 
-import angr
-import networkx as nx
-import numpy as np
-
 from src import logger, constants
-
-
-def compute_v(binaries) -> [float]:
-    cg_graphs = []
-    for binary in binaries:
-        cg_graphs += [construct_cg(binary)]
-
-    v = []
-    for cg in cg_graphs:
-        spectrum = nx.laplacian_spectrum(cg, None).tolist()
-        spectrum.sort(reverse=True)
-        spectrum = np.array(spectrum)
-        spectrum /= np.linalg.norm(spectrum)
-        v += [spectrum]
-
-    return v
-
-
-def compute_w(binaries) -> [float]:
-    cfg_graphs = []
-    for binary in binaries:
-        cfg_graphs.extend(construct_cfgs(binary))
-
-    w = []
-    for cfg in cfg_graphs:
-        w += [nx.number_of_edges(cfg)]
-
-    w.sort(reverse=True)
-    w /= np.linalg.norm(w)
-    return w
-
-
-def construct_cg(binary) -> nx.MultiGraph:
-    cfg = init_angr(binary).analyses.CFG(show_progressbar=True)
-    return cfg.functions.callgraph.to_undirected()
-
-
-def construct_cfgs(binary) -> [nx.DiGraph]:
-    cfgs = []
-    p = init_angr(binary)
-    p.analyses.CFGEmulated(show_progressbar=True)
-    for function in p.kb.functions.items():
-        cfgs += [function[1].transition_graph]
-    return cfgs
-
-
-def init_angr(binary) -> angr.Project:
-    start_time = time.time()
-    proj: angr.Project = angr.Project(binary, load_options={'auto_load_libs': False})
-    logger.log("initialised angr: " + str(proj) + " in " + str(round(time.time() - start_time, 2)) + " seconds")
-    return proj
 
 
 def get_binaries(p0, p1):
@@ -95,7 +40,8 @@ def compile_program_cmake(dir, n: int) -> [str]:
     make_cmd = [make, 'all']
     subprocess.run(make_cmd, cwd=dir)
     logger.log("compiled p" + str(n) +
-               " successfully using Makefile in " + str(round(time.time() - start_time, 2)) + " seconds", level=1, prefix=constants.LOG_PREFIX_PRE)
+               " successfully using Makefile in " + str(round(time.time() - start_time, 2)) + " seconds", level=1,
+               prefix=constants.LOG_PREFIX_PRE)
     return find_binaries(dir)
 
 
@@ -139,7 +85,8 @@ def compile_program_gcc(dir, n: int) -> [str]:
         binaries += [binary]
 
     logger.log("compiled p" + str(n) +
-               " successfully using gcc in " + str(round(time.time() - start_time, 2)) + " seconds", level=1, prefix=constants.LOG_PREFIX_PRE)
+               " successfully using gcc in " + str(round(time.time() - start_time, 2)) + " seconds", level=1,
+               prefix=constants.LOG_PREFIX_PRE)
     return binaries
 
 
