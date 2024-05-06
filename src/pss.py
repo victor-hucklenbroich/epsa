@@ -99,3 +99,7 @@ def init_angr(binary) -> angr.Project:
     proj: angr.Project = angr.Project(binary, load_options={'auto_load_libs': False})
     logger.log("initialised angr: " + str(proj) + " in " + str(round(time.time() - start_time, 2)) + " seconds")
     return proj
+
+
+def calculate(md: float) -> float:
+    return (2 * np.sqrt(2) - md) / (2 * np.sqrt(2))

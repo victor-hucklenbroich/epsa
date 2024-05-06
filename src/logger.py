@@ -5,7 +5,6 @@ from enum import Enum
 
 from constants import LOG_DIR
 from constants import LOG_FILE
-from constants import LOG_PREFIX_PSS
 
 
 class LogLevel(Enum):
@@ -16,7 +15,7 @@ class LogLevel(Enum):
 LOG_LEVEL: LogLevel = LogLevel.INFO
 
 
-def log(s: str, level: int = 0, prefix: str = LOG_PREFIX_PSS):
+def log(s: str, level: int = 0, prefix: str = ""):
     content = ''
     if not os.path.isfile(LOG_FILE):
         content += "LOG started: " + str(datetime.now()) + "\n"

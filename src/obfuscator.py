@@ -2,12 +2,14 @@ import json
 import random
 import string
 import subprocess
+import time
 
 import preprocessor as preproc
 from src import logger, constants
 
 
 def obfuscate(p: str, noise_per_loc: float = 0.1):
+    start_time = time.time()
     logger.log("noise per LOC: " + str(noise_per_loc), level=1, prefix=constants.LOG_PREFIX_MOD)
     sources: [str] = preproc.search_paths(p)
     total_noise_added: int = 0
@@ -31,6 +33,8 @@ def obfuscate(p: str, noise_per_loc: float = 0.1):
             total_noise_added) + " noise functions and calling them " + str(
             total_calls_added) + " times", level=1,
         prefix=constants.LOG_PREFIX_MOD)
+    logger.log("modification took " + str(round(time.time() - start_time, 2)) + " seconds\n", level=1,
+               prefix=constants.LOG_PREFIX_MOD)
 
 
 def calculate_loc(source: str) -> int:
@@ -85,7 +89,8 @@ def generate_calls(source: str, lines: [str], functions: [dict]) -> int:
             line = line[:len(line) - 1]
             line += " " + function + "\n"
             logger.log("Modified line " + str(
-                i + len(functions) + 1) + " (" + str(i + 1) + ") in " + source + " by adding call to noise function " + function,
+                i + len(functions) + 1) + " (" + str(
+                i + 1) + ") in " + source + " by adding call to noise function " + function,
                        prefix=constants.LOG_PREFIX_MOD)
             calls_added += 1
         lines[i] = line

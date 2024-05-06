@@ -1,17 +1,17 @@
 import mimetypes
 import os
-import pathlib
 import shutil
 import subprocess
 import time
 import zipfile
 from pathlib import Path
 
+from constants import ARCHIVE_PATH, DEMO_DATA_PATH, BASE_DATA_PATH
 from src import logger, constants
 
 
 def get_binaries(p0, p1):
-    return compile_program(p0, 0), compile_program(p1, 1)
+    return compile_program(p0), compile_program(p1)
 
 
 def search_paths(directory):
@@ -26,22 +26,14 @@ def search_paths(directory):
     return paths
 
 
-def compile_program(dir, n: int) -> [str]:
-    logger.log("compiling p" + str(n), prefix=constants.LOG_PREFIX_PRE)
-    if has_makefile(dir):
-        return compile_program_cmake(dir, n)
-    else:
-        return compile_program_gcc(dir, n)
-
-
-def compile_program_cmake(dir, n: int) -> [str]:
+def compile_program(dir) -> [str]:
+    logger.log("compiling " + path_tail(dir))
     start_time = time.time()
     make = constants.make()
     make_cmd = [make, 'all']
     subprocess.run(make_cmd, cwd=dir)
-    logger.log("compiled p" + str(n) +
-               " successfully using Makefile in " + str(round(time.time() - start_time, 2)) + " seconds", level=1,
-               prefix=constants.LOG_PREFIX_PRE)
+    logger.log("compiled " + path_tail(dir) +
+               " successfully using Makefile in " + str(round(time.time() - start_time, 2)) + " seconds", level=1)
     return find_binaries(dir)
 
 
@@ -66,56 +58,25 @@ def find_binaries(dir) -> [str]:
     return binaries
 
 
-def compile_program_gcc(dir, n: int) -> [str]:
-    start_time = time.time()
-    files = search_paths(dir)
-    binaries = []
-    gcc = constants.gcc()
-    path = pathlib.Path(dir).parent.absolute()
-    output_dir = os.path.join(path, "binaries") + str(n)
-    for file in files:
-        gcc_cmd = [gcc, file, '-o']
-        binary = os.path.join(output_dir, Path(file).stem)
-        gcc_cmd += [binary]
-        mkdir_cmd = ['mkdir', '-p', output_dir]
-        logger.log(mkdir_cmd)
-        subprocess.run(mkdir_cmd)
-        logger.log(gcc_cmd)
-        subprocess.run(gcc_cmd)
-        binaries += [binary]
-
-    logger.log("compiled p" + str(n) +
-               " successfully using gcc in " + str(round(time.time() - start_time, 2)) + " seconds", level=1,
-               prefix=constants.LOG_PREFIX_PRE)
-    return binaries
-
-
 def clean(path: Path, replace_with_archives=False, clean_with_make=True):
-    if replace_with_archives and has_archive(str(path)):
-        replace_data_with_archive(str(path))
+    if replace_with_archives and zipfile.is_zipfile(ARCHIVE_PATH):
+        replace_data_with_archive()
     if clean_with_make:
         for dirs in os.walk(path):
             for dir in dirs[1]:
                 dir = os.path.join(path, dir)
                 if has_makefile(dir):
                     make_clean(dir)
-                    logger.log("removed binary and .o files in " + dir, level=1, prefix=constants.LOG_PREFIX_PRE)
+                    logger.log("removed binary and .o files in " + dir, level=1)
 
-    clear_temporary_dirs(str(path))
-    logger.log("clean successful\n", level=1, prefix=constants.LOG_PREFIX_PRE)
-
-
-def has_archive(data_path) -> bool:
-    data_archive = data_path + ".zip"
-    return zipfile.is_zipfile(data_archive)
+    logger.log("clean successful\n", level=1)
 
 
-def replace_data_with_archive(data_path):
-    cmd = ['rm', '-rf', data_path]
+def replace_data_with_archive():
+    cmd = ['rm', '-rf', DEMO_DATA_PATH]
     subprocess.check_output(cmd)
-    data_archive = data_path + ".zip"
-    shutil.unpack_archive(data_archive, data_path)
-    logger.log("replaced test data with available archives: " + data_archive, level=1, prefix=constants.LOG_PREFIX_PRE)
+    shutil.unpack_archive(ARCHIVE_PATH, BASE_DATA_PATH)
+    logger.log("replaced test data with available archives: " + ARCHIVE_PATH, level=1)
 
 
 def has_makefile(dir) -> bool:
@@ -129,11 +90,5 @@ def make_clean(dir):
     subprocess.check_output(make_cmd, cwd=dir)
 
 
-def clear_temporary_dirs(path: str):
-    path = os.path.join(path, "binaries")
-    for i in range(2):
-        cmd = ['rm', '-rf', (path + str(i))]
-        try:
-            subprocess.check_output(cmd)
-        except subprocess.CalledProcessError:
-            continue
+def path_tail(dir: str) -> str:
+    return os.path.basename(os.path.normpath(dir))
