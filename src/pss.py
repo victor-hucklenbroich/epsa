@@ -115,6 +115,7 @@ def compare_with_given_features(v0: list, w0: list, v1: list, w1: list) -> float
     logger.log("simCFG(p0, p1) = " + str(scfg), level=1)
     pss_value: float = (scg + scfg) / (2 * np.sqrt(2))
     logger.log("pss(p0, p1) = " + str(pss_value), level=1)
+    return pss_value
 
 
 def calculate_from_optimized(md: float) -> float:
