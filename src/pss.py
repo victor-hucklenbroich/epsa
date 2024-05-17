@@ -22,10 +22,10 @@ def compare(p0: str, p1: str) -> float:
 
 def sim_cg(p0: angr.Project, p1: angr.Project) -> float:
     logger.log("calculating feature vector v0")
-    v0: list = compute_v(p0)[0]
+    v0: list = compute_v(p0)
     logger.log("v0: " + str(v0[:10]), level=1)
     logger.log("calculating feature vector v1")
-    v1: list = compute_v(p1)[0]
+    v1: list = compute_v(p1)
     logger.log("v1: " + str(v1[:10]), level=1)
     sim: float = compute_similarity(v0, v1)
     logger.log("simCG(p0, p1) = " + str(sim), level=1)
@@ -34,10 +34,10 @@ def sim_cg(p0: angr.Project, p1: angr.Project) -> float:
 
 def sim_cfg(p0: angr.Project, p1: angr.Project) -> float:
     logger.log("calculating feature vector w0")
-    w0: list = np.ndarray.tolist(compute_w(p0))
+    w0: list = (compute_w(p0))
     logger.log("w0: " + str(w0[:5]), level=1)
     logger.log("calculating feature vector w1")
-    w1: list = np.ndarray.tolist(compute_w(p1))
+    w1: list = (compute_w(p1))
     logger.log("w1: " + str(w1[:5]), level=1)
     sim: float = compute_similarity(w0, w1)
     logger.log("simCFG(p0, p1) = " + str(sim), level=1)
@@ -69,7 +69,7 @@ def compute_v(p: angr.Project) -> [float]:
         spectrum /= np.linalg.norm(spectrum)
         v += [spectrum]
 
-    return v
+    return np.ndarray.tolist(v[0])
 
 
 def compute_w(p: angr.Project) -> [float]:
@@ -81,7 +81,7 @@ def compute_w(p: angr.Project) -> [float]:
 
     w.sort(reverse=True)
     w /= np.linalg.norm(w)
-    return w
+    return np.ndarray.tolist(w)
 
 
 def construct_cg(p: angr.Project) -> nx.MultiGraph:
