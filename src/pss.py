@@ -1,47 +1,23 @@
-import time
-
 import angr
 import networkx as nx
 import numpy as np
+from multipledispatch import dispatch
 
 import preprocessor as preproc
-from src import logger
 
 
-def compare(p0: str, p1: str) -> float:
-    start_time = time.time()
-    (b0, b1) = preproc.get_binaries(p0, p1)
-    proj0: angr.Project = init_angr(b0[0])
-    proj1: angr.Project = init_angr(b1[0])
-    pss_value = (sim_cg(proj0, proj1) + sim_cfg(proj0, proj1)) / (2 * np.sqrt(2))
-    logger.log("pss(p0, p1) = " + str(pss_value), level=1)
-    logger.log("pss execution time (including compilation): " + str(round(time.time() - start_time, 2)) + " seconds\n",
-               level=1)
+@dispatch(str, list, list)
+def compare(p0: str, v1: list, w1: list) -> float:
+    feat0 = compute_features(p0)
+    return compare(feat0[0], feat0[1], v1, w1)
+
+
+@dispatch(list, list, list, list)
+def compare(v0: list, w0: list, v1: list, w1: list) -> float:
+    sim_cg: float = compute_similarity(v0, v1)
+    sim_cfg: float = compute_similarity(w0, w1)
+    pss_value: float = (sim_cg + sim_cfg) / (2 * np.sqrt(2))
     return pss_value
-
-
-def sim_cg(p0: angr.Project, p1: angr.Project) -> float:
-    logger.log("calculating feature vector v0")
-    v0: list = compute_v(p0)
-    logger.log("v0: " + str(v0[:10]), level=1)
-    logger.log("calculating feature vector v1")
-    v1: list = compute_v(p1)
-    logger.log("v1: " + str(v1[:10]), level=1)
-    sim: float = compute_similarity(v0, v1)
-    logger.log("simCG(p0, p1) = " + str(sim), level=1)
-    return sim
-
-
-def sim_cfg(p0: angr.Project, p1: angr.Project) -> float:
-    logger.log("calculating feature vector w0")
-    w0: list = (compute_w(p0))
-    logger.log("w0: " + str(w0[:5]), level=1)
-    logger.log("calculating feature vector w1")
-    w1: list = (compute_w(p1))
-    logger.log("w1: " + str(w1[:5]), level=1)
-    sim: float = compute_similarity(w0, w1)
-    logger.log("simCFG(p0, p1) = " + str(sim), level=1)
-    return sim
 
 
 def compute_similarity(feat0: list, feat1: list) -> float:
@@ -53,30 +29,38 @@ def compute_similarity(feat0: list, feat1: list) -> float:
 
 
 def compute_features(p: str) -> (list, list):
-    proj = init_angr(preproc.compile_program(p)[0])
+    proj = init_angr(preproc.compile_program(p))
     v = compute_v(proj)
     w = compute_w(proj)
     return v, w
 
 
+@dispatch(angr.Project)
 def compute_v(p: angr.Project) -> [float]:
-    cg_graphs = [construct_cg(p)]
-    v = []
-    for cg in cg_graphs:
-        spectrum = nx.laplacian_spectrum(cg, None).tolist()
-        spectrum.sort(reverse=True)
-        spectrum = np.array(spectrum)
-        spectrum /= np.linalg.norm(spectrum)
-        v += [spectrum]
-
-    return np.ndarray.tolist(v[0])
+    cg: nx.MultiGraph = construct_cg(p)
+    return compute_v(cg)
 
 
+@dispatch(nx.MultiGraph)
+def compute_v(cg: nx.MultiGraph) -> [float]:
+    spectrum = nx.laplacian_spectrum(cg, None).tolist()
+    spectrum.sort(reverse=True)
+    spectrum = np.array(spectrum)
+    spectrum /= np.linalg.norm(spectrum)
+    v: list = np.ndarray.tolist(spectrum)
+    return v
+
+
+@dispatch([angr.Project])
 def compute_w(p: angr.Project) -> [float]:
-    cfg_graphs = []
-    cfg_graphs.extend(construct_cfgs(p))
+    cfgs: [nx.DiGraph] = construct_cfgs(p)
+    return compute_w(cfgs)
+
+
+@dispatch(list)
+def compute_w(cfgs: list) -> [float]:
     w = []
-    for cfg in cfg_graphs:
+    for cfg in cfgs:
         w += [nx.number_of_edges(cfg)]
 
     w.sort(reverse=True)
@@ -98,25 +82,5 @@ def construct_cfgs(p: angr.Project) -> [nx.DiGraph]:
 
 
 def init_angr(binary: str) -> angr.Project:
-    start_time = time.time()
     proj: angr.Project = angr.Project(binary, load_options={'auto_load_libs': False})
-    logger.log("initialised angr: " + str(proj) + " in " + str(round(time.time() - start_time, 2)) + " seconds")
     return proj
-
-
-def compare_with_given_features(v0: list, w0: list, v1: list, w1: list) -> float:
-    logger.log("v0: " + str(v0[:10]), level=1)
-    logger.log("v1: " + str(v1[:10]), level=1)
-    scg: float = compute_similarity(v0, v1)
-    logger.log("simCG(p0, p1) = " + str(scg), level=1)
-    logger.log("w0: " + str(w0[:5]), level=1)
-    logger.log("w1: " + str(w1[:5]), level=1)
-    scfg: float = compute_similarity(w0, w1)
-    logger.log("simCFG(p0, p1) = " + str(scfg), level=1)
-    pss_value: float = (scg + scfg) / (2 * np.sqrt(2))
-    logger.log("pss(p0, p1) = " + str(pss_value), level=1)
-    return pss_value
-
-
-def calculate_from_optimized(md: float) -> float:
-    return (2 * np.sqrt(2) - md) / (2 * np.sqrt(2))

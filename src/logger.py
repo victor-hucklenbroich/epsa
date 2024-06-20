@@ -5,14 +5,7 @@ from enum import Enum
 
 from constants import LOG_DIR
 from constants import LOG_FILE
-
-
-class LogLevel(Enum):
-    INFO = 1
-    ALL = 0
-
-
-LOG_LEVEL: LogLevel = LogLevel.INFO
+from constants import LOG_LEVEL
 
 
 def log(s: str, level: int = 0, prefix: str = ""):

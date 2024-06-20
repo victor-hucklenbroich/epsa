@@ -1,4 +1,3 @@
-import mimetypes
 import os
 import shutil
 import subprocess
@@ -14,19 +13,18 @@ def get_binaries(p0, p1):
     return compile_program(p0), compile_program(p1)
 
 
-def search_paths(directory):
-    paths = []
+def search_dir(directory: str) -> [str]:
+    paths: [str] = []
     for root, dirs, files in os.walk(directory):
         for file in files:
             if file.endswith('.c') | file.endswith('.cpp'):
                 path = os.path.join(root, file)
-                logger.log("Found source: " + path)
                 paths.append(path)
 
     return paths
 
 
-def compile_program(dir) -> [str]:
+def compile_program(dir) -> str:
     logger.log("compiling " + path_tail(dir))
     start_time = time.time()
     make = constants.make()
@@ -34,40 +32,18 @@ def compile_program(dir) -> [str]:
     subprocess.run(make_cmd, cwd=dir)
     logger.log("compiled " + path_tail(dir) +
                " successfully using Makefile in " + str(round(time.time() - start_time, 2)) + " seconds", level=1)
-    return find_binaries(dir)
+    return os.path.join(constants.TEST_PROGRAM_PATH, constants.TEST_PROGRAM)
 
 
-def find_binaries(dir) -> [str]:
-    binaries = []
-    exclusions = ['.DS_Store', 'Makefile', 'README', '.1', '.hpp', 'c']
-    dir = os.path.join(dir, 'src')
-    for root, dirs, files in os.walk(dir):
-        for file in files:
-            mime = mimetypes.guess_type(file)
-            if mime[0] is None:
-                file = os.path.join(dir, file)
-                include: bool = True
-                for exclusion in exclusions:
-                    if file.endswith(exclusion):
-                        include = False
-                        break
-
-                if include:
-                    binaries.append(file)
-
-    return binaries
-
-
-def clean(path: Path, replace_with_archives=False, clean_with_make=True):
+def clean(path: Path, replace_with_archives=False):
     if replace_with_archives and zipfile.is_zipfile(ARCHIVE_PATH):
         replace_data_with_archive()
-    if clean_with_make:
-        for dirs in os.walk(path):
-            for dir in dirs[1]:
-                dir = os.path.join(path, dir)
-                if has_makefile(dir):
-                    make_clean(dir)
-                    logger.log("removed binary and .o files in " + dir, level=1)
+    for dirs in os.walk(path):
+        for dir in dirs[1]:
+            dir = os.path.join(path, dir)
+            if has_makefile(dir):
+                make_clean(dir)
+                logger.log("removed binary and .o files in " + dir, level=1)
 
     logger.log("clean successful\n", level=1)
 
