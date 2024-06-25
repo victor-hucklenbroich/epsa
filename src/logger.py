@@ -1,7 +1,6 @@
 import os
 import subprocess
 from datetime import datetime
-from enum import Enum
 
 from constants import LOG_DIR
 from constants import LOG_FILE

@@ -3,8 +3,6 @@ import networkx as nx
 import numpy as np
 from multipledispatch import dispatch
 
-import preprocessor as preproc
-
 
 @dispatch(str, list, list)
 def compare(p0: str, v1: list, w1: list) -> float:
@@ -29,7 +27,7 @@ def compute_similarity(feat0: list, feat1: list) -> float:
 
 
 def compute_features(p: str) -> (list, list):
-    proj = init_angr(preproc.compile_program(p))
+    proj: angr.Project = init_angr(p)
     v = compute_v(proj)
     w = compute_w(proj)
     return v, w

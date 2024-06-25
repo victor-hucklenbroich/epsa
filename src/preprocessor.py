@@ -5,7 +5,7 @@ import time
 import zipfile
 from pathlib import Path
 
-from constants import ARCHIVE_PATH, DEMO_DATA_PATH, BASE_DATA_PATH
+from constants import ARCHIVE_PATH, DEMO_DATA_PATH, TEST_PROGRAM_PATH
 from src import logger, constants
 
 
@@ -32,7 +32,7 @@ def compile_program(dir) -> str:
     subprocess.run(make_cmd, cwd=dir)
     logger.log("compiled " + path_tail(dir) +
                " successfully using Makefile in " + str(round(time.time() - start_time, 2)) + " seconds", level=1)
-    return os.path.join(constants.TEST_PROGRAM_PATH, constants.TEST_PROGRAM)
+    return os.path.join(constants.TEST_SOURCES_PATH, constants.TEST_PROGRAM)
 
 
 def clean(path: Path, replace_with_archives=False):
@@ -49,9 +49,9 @@ def clean(path: Path, replace_with_archives=False):
 
 
 def replace_data_with_archive():
-    cmd = ['rm', '-rf', DEMO_DATA_PATH]
+    cmd = ['rm', '-rf', TEST_PROGRAM_PATH]
     subprocess.check_output(cmd)
-    shutil.unpack_archive(ARCHIVE_PATH, BASE_DATA_PATH)
+    shutil.unpack_archive(ARCHIVE_PATH, DEMO_DATA_PATH)
     logger.log("replaced test data with available archives: " + ARCHIVE_PATH, level=1)
 
 

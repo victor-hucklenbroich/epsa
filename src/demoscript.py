@@ -1,22 +1,7 @@
-import time
-
 import preprocessor as preproc
 import pss
 from constants import *
-from src import logger, obfuscator, genetics
-from src.genetics import Gene
-
-
-def obfuscation_demo():
-    preproc.clean(Path(TEST_PROGRAM_PATH), replace_with_archives=True)
-    clone: dict = find_entry(TEST_PROGRAM, O_LEVEL)
-    features: (list, list) = clone['v'], clone['w']
-    obfuscator.obfuscate(TEST_PROGRAM_PATH, features)
-    compare_to_repo()
-
-
-def harmonization_demo():
-    pass
+from src import logger, genetics
 
 
 def compare_to_repo():
@@ -36,12 +21,7 @@ def compare_to_repo():
 
 
 if __name__ == '__main__':
+    features: (list, list) = find_entry("lua", 0)["v"], find_entry("lua", 0)["w"]
     pop: list = genetics.initial_population(TEST_PROGRAM_PATH, POPULATION_SIZE)
-    i: int = 0
-    genes: [Gene] = []
-    while i < 10:
-        gene: Gene = genetics.generate_statement_gene()
-        print(gene.get_content())
-        genes.append(gene)
-        i += 1
+    genetics.evolutionary_cycle(pop, features)
     x = 0

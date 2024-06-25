@@ -23,7 +23,6 @@ LOG_FILE = os.path.join(LOG_DIR, datetime.now().ctime().strip() + '.log')
 LOG_PREFIX_PSS: str = "[PSS] "
 LOG_PREFIX_MOD: str = "[MOD] "
 
-
 # Test data
 BASE_DATA_PATH: str = os.path.join(WORKING_DIR, 'data')
 DEMO_DATA_PATH: str = os.path.join(BASE_DATA_PATH, 'demo')
@@ -31,6 +30,7 @@ REPO_DATA: list = pd.read_pickle(os.path.join(BASE_DATA_PATH, "BO_REPO_DATA"))
 TEST_PROGRAM: str = "lua"
 O_LEVEL: int = 0
 TEST_PROGRAM_PATH: str = os.path.join(DEMO_DATA_PATH, TEST_PROGRAM)
+TEST_SOURCES_PATH: str = os.path.join(TEST_PROGRAM_PATH, "src")
 ARCHIVE_PATH: str = TEST_PROGRAM_PATH + "[O" + str(O_LEVEL) + "].zip"
 
 
