@@ -24,7 +24,7 @@ def search_dir(directory: str) -> [str]:
     return paths
 
 
-def compile_program(dir) -> str:
+def compile_program(dir):
     logger.log("compiling " + path_tail(dir))
     start_time = time.time()
     make = constants.make()
@@ -32,7 +32,6 @@ def compile_program(dir) -> str:
     subprocess.run(make_cmd, cwd=dir)
     logger.log("compiled " + path_tail(dir) +
                " successfully using Makefile in " + str(round(time.time() - start_time, 2)) + " seconds", level=1)
-    return os.path.join(constants.TEST_SOURCES_PATH, constants.TEST_PROGRAM)
 
 
 def clean(path: Path, replace_with_archives=False):

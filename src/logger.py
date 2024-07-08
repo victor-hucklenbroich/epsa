@@ -8,20 +8,23 @@ from constants import LOG_LEVEL
 
 
 def log(s: str, level: int = 0, prefix: str = ""):
-    content = ''
     if not os.path.isfile(LOG_FILE):
-        content += "LOG started: " + str(datetime.now()) + "\n"
-
-    content += prefix + s
-    if level >= LOG_LEVEL.value:
         try:
-            with open(LOG_FILE, "a") as file:
-                file.write(content + "\n")
+            write_to_file("LOG started: " + str(datetime.now()) + "\n")
         except FileNotFoundError:
             mkdir_cmd = ['mkdir', '-p', LOG_DIR]
             subprocess.run(mkdir_cmd)
             log("Created logging directory")
-            log(s, level=1)
+            log(s, level=level)
             return
 
+    content = prefix + s + "\n"
+    if level >= LOG_LEVEL.value:
+        write_to_file(content)
+
     print(content)
+
+
+def write_to_file(s: str):
+    with open(LOG_FILE, "a") as file:
+        file.write(s)

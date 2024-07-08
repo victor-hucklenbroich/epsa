@@ -21,7 +21,5 @@ def compare_to_repo():
 
 
 if __name__ == '__main__':
-    features: (list, list) = find_entry("lua", 0)["v"], find_entry("lua", 0)["w"]
-    pop: list = genetics.initial_population(TEST_PROGRAM_PATH, POPULATION_SIZE)
-    genetics.evolutionary_cycle(pop, features)
+    modified_features: (list, list) = genetics.run()
     x = 0

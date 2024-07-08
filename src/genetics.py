@@ -8,7 +8,7 @@ from pathlib import Path
 
 from multipledispatch import dispatch
 
-from preprocessor import search_dir, clean
+from preprocessor import search_dir, clean, compile_program
 from src import constants, pss, logger
 
 
@@ -45,10 +45,19 @@ class Function:
 class Gene:
     NESTED_PLACEHOLDER = "{0}"
 
-    def __init__(self, type: Genetype, contents: [str], nested: list):
+    def __init__(self, type: Genetype, contents: [str], nested: list, func: Function = None):
         self.type = type
         self.contents = contents
+        self.fixed = False
         self.nested = nested
+        self.function = func
+
+    def set_fixed(self, value):
+        self.fixed = value
+
+    def append_nested(self, gene):
+        self.contents.insert(len(self.contents) / 2, Gene.NESTED_PLACEHOLDER)
+        self.nested.append(gene)
 
     def get_content(self) -> str:
         if not self.nested:
@@ -58,7 +67,7 @@ class Gene:
             i: int = 0
             n: int = 0
             while i < len(self.contents):
-                if self.contents[i] == "{0}":
+                if self.contents[i] == self.NESTED_PLACEHOLDER:
                     content += self.contents[i].format(self.nested[n].get_content())
                     n += 1
                 else:
@@ -124,16 +133,34 @@ class Individual:
         with open(path, "w") as h:
             h.writelines(content)
 
+    def get_genes(self) -> [Gene]:
+        genes: [Gene] = []
+        for source in self.sources:
+            for genome in source.genomes:
+                for gene in genome.genes:
+                    genes.append(gene)
+        return genes
+
+    def add_gene(self, gene: Gene):
+        source: Source = random.choice(self.sources)
+        if gene.type == Genetype.FUNCTION:
+            source.genomes[0].genes.append(gene)
+        else:
+            genome: Genome = random.choice(source.genomes)
+            genome.genes.append(gene)
+
+    def distribute_genes(self, genes: [Gene]):
+        for gene in genes:
+            self.add_gene(gene)
+
 
 def encode_source(path: str) -> Source:
     with open(path, "r") as s:
         code = s.readlines()
-
     genomes: list = [Genome(0, Genetype.FUNCTION, [])]
     i: int = 0
     while i < len(code):
         line: str = code[i]
-        # TODO check if this method is good for placing genomes
         if " " in line and (
                 ") {" in line or "){" in line) and "#" not in line and ";" and "\\" not in line and "}" not in line:
             genomes.append(Genome(i + 1, Genetype.EMPTY, []))
@@ -142,15 +169,33 @@ def encode_source(path: str) -> Source:
     return Source(path, code, genomes)
 
 
-def initial_population(p: str, size: int) -> list:
-    clean(p, replace_with_archives=True)
-    population: list = []
+def encode_individual(p: str) -> Individual:
     sources: list = []
     files: [str] = search_dir(p)
     for source in files:
         sources.append(encode_source(source))
-    first: Individual = Individual(p, sources, [])
-    population.append(first)
+    return Individual(p, sources, [])
+
+
+def run() -> (list, list):
+    features: (list, list) = constants.FEATURES
+    population: list = initial_population(constants.TEST_PROGRAM_PATH, constants.POPULATION_SIZE)
+    i: int = 0
+    while i < constants.GENERATIONS:
+        evolutionary_cycle(population, features)
+        i += 1
+    population.sort(reverse=True, key=lambda individual: fitness(individual, features))
+    clean(Path(constants.TEST_PROGRAM_PATH), replace_with_archives=True)
+    best: Individual = population[0]
+    best.write_code()
+    compile_program(constants.TEST_PROGRAM_PATH)
+    logger.log("genetics created " + best.__str__(), level=2)
+    return pss.compute_features(constants.BINARY_PATH)
+
+
+def initial_population(p: str, size: int) -> list:
+    clean(p, replace_with_archives=True)
+    population: list = [copy.deepcopy(encode_individual(constants.TEST_PROGRAM_PATH))]
     i: int = 0
     while i < size - 1:
         c: Individual = copy.deepcopy(population[0])
@@ -167,7 +212,7 @@ def initial_population(p: str, size: int) -> list:
 
 def evolutionary_cycle(population: list, features: (list, list)):
     population = selection(population, features)
-    crossover(population)
+    population = crossover(population)
     mutation(population)
 
 
@@ -178,15 +223,17 @@ def fitness(i: Individual, features: (list, list)) -> float:
     t: float
     fit: float
     try:
-        sim: float = pss.compare(i.path, features[0], features[1])
+        compile_program(constants.TEST_PROGRAM_PATH)
+        sim: float = pss.compare(constants.BINARY_PATH, features[0], features[1])
         logger.log(str(i) + ":pss = " + str(sim), level=1)
         t = time.time() - start_time
         fit = 1 - sim - ((t - 65) ** 2) * 0.0001
-    except Exception:
+    except Exception as e:
+        logger.log(e.__str__())
         t = time.time() - start_time
         fit = -10000
-    logger.log(str(i) + ": compilation, angr analysis, pss took " + str(round(t, 2)) + " seconds\n", level=1)
-    logger.log(str(i) + ":fitness = " + str(fit) + "\n", level=1)
+    logger.log(str(i) + ": compilation, angr analysis, pss took " + str(round(t, 2)) + " seconds", level=1)
+    logger.log(str(i) + ":fitness = " + str(fit), level=2)
     return fit
 
 
@@ -199,17 +246,46 @@ def selection(population: list, features: (list, list)) -> list:
     return selected
 
 
-def crossover(population: list):
-    pass
+def crossover(parents: list) -> list:
+    clean(Path(constants.TEST_PROGRAM_PATH), replace_with_archives=True)
+    base: Individual = encode_individual(constants.TEST_PROGRAM_PATH)
+    offspring: list = []
+    for i in range(len(parents) - 1):
+        j: int = i + 1
+        while j < len(parents):
+            p1: Individual = parents[i]
+            p2: Individual = parents[j]
+            child: Individual = copy.deepcopy(base)
+            genes: ([Gene], [Gene]) = p1.get_genes(), p2.get_genes()
+            combined: [Gene] = []
+            additions: [Function] = []
+            # Normalized uniform gene crossover
+            length: int = len(genes[0]) if len(genes[0]) < len(genes[1]) else len(genes[1])
+            for k in range(length):
+                gene: Gene = genes[random.getrandbits(1)][k]
+                if gene.type == Genetype.FUNCTION:
+                    additions.append(gene.function)
+                combined.append(gene)
+            # Add missing function definitions
+            for addition in p1.additions + p2.additions:
+                if addition not in additions:
+                    combined.append(generate_function_gene(child, addition))
+                    additions.append(addition)
+            child.additions = additions
+            child.distribute_genes(combined)
+            offspring.append(child)
+            j += 1
+
+    return offspring
 
 
 def mutation(population: list):
     for individual in population:
         if 0 == random.randint(0, 1):
+            genes: [Gene] = []
             for i in range(random.randint(1, 10)):
-                source: Source = random.choice(individual.sources)
-                genome: Genome = random.choice(source.genomes)
-                genome.genes.append(generate_gene(individual, genome.min_type))
+                genes.append(generate_gene(individual, random.choice(list(Genetype))))
+            individual.distribute_genes(genes)
 
 
 def generate_gene(i: Individual, min_type: Genetype) -> Gene:
@@ -218,7 +294,7 @@ def generate_gene(i: Individual, min_type: Genetype) -> Gene:
         gene = generate_function_gene(i)
     else:
         gene = generate_nested_gene(i)
-    logger.log("generated " + str(gene.type) + " gene: " + str(gene))
+    logger.log("generated " + str(gene.type) + " gene: " + gene.contents[0])
     return gene
 
 
@@ -226,11 +302,11 @@ def generate_nested_gene(i: Individual, origin: Function = None) -> Gene:
     gene: Gene
     g: int = random.randint(0, 6)
     if g < 3:
-        gene = generate_statement_gene()  # TODO add variables
+        gene = generate_statement_gene()
     elif 3 < g < 5:
-        gene = generate_call_gene(i, origin=origin)  # TODO add parameters
+        gene = generate_call_gene(i, origin=origin)
     elif g <= 5:
-        gene = generate_flow_gene(i, origin)  # TODO add variables
+        gene = generate_flow_gene(i, origin)
     else:
         gene = generate_empty_gene()
     return gene
@@ -340,7 +416,7 @@ def generate_flow_gene(i: Individual, origin: Function = None, variables: [str] 
         nested.append(generate_nested_gene(i, origin))
         contents.append("}\n")
     else:
-        return Gene(Genetype.EMPTY, [""], [])
+        return generate_empty_gene()
     return Gene(Genetype.FLOW, contents, nested)
 
 
@@ -372,7 +448,7 @@ def generate_function_gene(i: Individual, function: Function) -> Gene:
     if function.ret != "void":
         contents.append("return " + str(random.randint(0, 255)) + ";\n")
     contents.append("}")
-    return Gene(Genetype.FUNCTION, contents, nested)
+    return Gene(Genetype.FUNCTION, contents, nested, func=function)
 
 
 def random_name(a: int, b: int) -> str:
