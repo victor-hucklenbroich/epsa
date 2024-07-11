@@ -12,6 +12,14 @@ from preprocessor import search_dir, clean, compile_program
 from src import constants, pss, logger
 
 
+class ModMode(Enum):
+    OBFUSCATE = 0
+    HARMONIZE = 1
+
+
+mode: ModMode = ModMode.HARMONIZE
+
+
 class Genetype(Enum):
     EMPTY = -1
     STATEMENT = 0
@@ -88,6 +96,9 @@ class Genome:
             code += gene.get_content() + "\n"
         return code
 
+    def dump_genes(self):
+        self.genes = []
+
 
 class Source:
     def __init__(self, path: str, code: [str], genomes: [Genome]):
@@ -112,10 +123,15 @@ class Source:
 
 
 class Individual:
-    def __init__(self, path: str, sources: [Source], additions: [Function]):
+    def __init__(self, path: str, sources: [Source], additions: [Function], alive: int, fit: float = -10000):
         self.path = path
         self.sources = sources
         self.additions = additions
+        self.alive_since = alive
+        self.fitness = fit
+
+    def __str__(self) -> str:
+        return str(hash(self))
 
     def write_code(self):
         self.generate_noise_header()
@@ -169,12 +185,12 @@ def encode_source(path: str) -> Source:
     return Source(path, code, genomes)
 
 
-def encode_individual(p: str) -> Individual:
+def encode_individual(p: str, generation: int) -> Individual:
     sources: list = []
     files: [str] = search_dir(p)
     for source in files:
         sources.append(encode_source(source))
-    return Individual(p, sources, [])
+    return Individual(p, sources, [], generation)
 
 
 def run() -> (list, list):
@@ -182,20 +198,22 @@ def run() -> (list, list):
     population: list = initial_population(constants.TEST_PROGRAM_PATH, constants.POPULATION_SIZE)
     i: int = 0
     while i < constants.GENERATIONS:
-        evolutionary_cycle(population, features)
+        population = evolutionary_cycle(i, population, features)
         i += 1
     population.sort(reverse=True, key=lambda individual: fitness(individual, features))
+    log_generation(i, population)
     clean(Path(constants.TEST_PROGRAM_PATH), replace_with_archives=True)
     best: Individual = population[0]
     best.write_code()
     compile_program(constants.TEST_PROGRAM_PATH)
-    logger.log("genetics created " + best.__str__(), level=2)
+    logger.log("best individual:  ", level=2)
+    log_individual(best)
     return pss.compute_features(constants.BINARY_PATH)
 
 
 def initial_population(p: str, size: int) -> list:
     clean(p, replace_with_archives=True)
-    population: list = [copy.deepcopy(encode_individual(constants.TEST_PROGRAM_PATH))]
+    population: list = [copy.deepcopy(encode_individual(constants.TEST_PROGRAM_PATH, 0))]
     i: int = 0
     while i < size - 1:
         c: Individual = copy.deepcopy(population[0])
@@ -210,10 +228,17 @@ def initial_population(p: str, size: int) -> list:
     return population
 
 
-def evolutionary_cycle(population: list, features: (list, list)):
-    population = selection(population, features)
-    population = crossover(population)
-    mutation(population)
+def evolutionary_cycle(generation: int, population: list, features: (list, list)) -> list:
+    for individual in population:
+        new_fit: float = fitness(individual, features)
+        if new_fit > individual.fitness:
+            individual.fitness = new_fit
+    population.sort(reverse=True, key=lambda i: i.fitness)
+    log_generation(generation, population)
+    pop = selection(population)
+    pop += crossover(pop, generation)
+    mutation(pop)
+    return pop
 
 
 def fitness(i: Individual, features: (list, list)) -> float:
@@ -227,28 +252,32 @@ def fitness(i: Individual, features: (list, list)) -> float:
         sim: float = pss.compare(constants.BINARY_PATH, features[0], features[1])
         logger.log(str(i) + ":pss = " + str(sim), level=1)
         t = time.time() - start_time
-        fit = 1 - sim - ((t - 65) ** 2) * 0.0001
+        if mode == ModMode.OBFUSCATE:
+            fit = 1 - sim - ((t - 65) ** 2) * 0.0001
+        else:
+            fit = 0 + sim - ((t - 65) ** 2) * 0.0001
     except Exception as e:
         logger.log(e.__str__())
         t = time.time() - start_time
         fit = -10000
     logger.log(str(i) + ": compilation, angr analysis, pss took " + str(round(t, 2)) + " seconds", level=1)
-    logger.log(str(i) + ":fitness = " + str(fit), level=2)
     return fit
 
 
-def selection(population: list, features: (list, list)) -> list:
-    population.sort(reverse=True, key=lambda individual: fitness(individual, features))
+def selection(population: list) -> list:
+    logger.log("Selection: ", level=2)
     selected: list = []
-    for i in range(int(constants.POPULATION_SIZE * 0.4)):
+    for i in range(int(constants.POPULATION_SIZE * constants.SELECTION_RATIO)):
         selected.append(population[i])
+        logger.log(population[i].__str__(), level=2)
 
     return selected
 
 
-def crossover(parents: list) -> list:
+def crossover(parents: list, generation: int) -> list:
+    logger.log("\nCrossover: ", level=2)
     clean(Path(constants.TEST_PROGRAM_PATH), replace_with_archives=True)
-    base: Individual = encode_individual(constants.TEST_PROGRAM_PATH)
+    base: Individual = encode_individual(constants.TEST_PROGRAM_PATH, generation + 1)
     offspring: list = []
     for i in range(len(parents) - 1):
         j: int = i + 1
@@ -256,36 +285,34 @@ def crossover(parents: list) -> list:
             p1: Individual = parents[i]
             p2: Individual = parents[j]
             child: Individual = copy.deepcopy(base)
-            genes: ([Gene], [Gene]) = p1.get_genes(), p2.get_genes()
-            combined: [Gene] = []
-            additions: [Function] = []
-            # Normalized uniform gene crossover
-            length: int = len(genes[0]) if len(genes[0]) < len(genes[1]) else len(genes[1])
-            for k in range(length):
-                gene: Gene = genes[random.getrandbits(1)][k]
-                if gene.type == Genetype.FUNCTION:
-                    additions.append(gene.function)
-                combined.append(gene)
-            # Add missing function definitions
+            # Uniform sources crossover
+            for s in range(len(child.sources)):
+                if bool(random.getrandbits(1)):
+                    child.sources[s] = p1.sources[s]
+                else:
+                    child.sources[s] = p2.sources[s]
+                child.sources[s].genomes[0].dump_genes()
+            # Generate missing functions
             for addition in p1.additions + p2.additions:
-                if addition not in additions:
-                    combined.append(generate_function_gene(child, addition))
-                    additions.append(addition)
-            child.additions = additions
-            child.distribute_genes(combined)
+                if addition not in child.additions:
+                    child.add_gene(generate_function_gene(child, addition))
+                    child.additions.append(addition)
             offspring.append(child)
             j += 1
+            logger.log(child.__str__() + ": " + p1.__str__() + ", " + p1.__str__(), level=2)
 
     return offspring
 
 
 def mutation(population: list):
+    logger.log("\nMutation: ", level=2)
     for individual in population:
         if 0 == random.randint(0, 1):
             genes: [Gene] = []
             for i in range(random.randint(1, 10)):
                 genes.append(generate_gene(individual, random.choice(list(Genetype))))
             individual.distribute_genes(genes)
+            logger.log(individual.__str__(), level=2)
 
 
 def generate_gene(i: Individual, min_type: Genetype) -> Gene:
@@ -453,3 +480,15 @@ def generate_function_gene(i: Individual, function: Function) -> Gene:
 
 def random_name(a: int, b: int) -> str:
     return ''.join(random.choice(string.ascii_letters) for i in range(random.randint(a, b)))
+
+
+def log_generation(generation: int, individuals: list):
+    logger.log("\n### Generation " + str(generation) + " ###", level=2)
+    for individual in individuals:
+        log_individual(individual)
+
+
+def log_individual(i: Individual):
+    output: str = "- Individual: " + i.__str__() + "\n  alive since: " + str(i.alive_since) + "\n  functions: " + str(
+        len(i.additions)) + "\n  genes: " + str(len(i.get_genes())) + "\n  fitness: " + str(i.fitness) + "\n"
+    logger.log(output, level=2)

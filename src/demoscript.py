@@ -1,3 +1,7 @@
+import pickle
+
+import pandas as pd
+
 import preprocessor as preproc
 import pss
 from constants import *
@@ -21,5 +25,13 @@ def compare_to_repo():
 
 
 if __name__ == '__main__':
+    logger.log("TEST_P: " + TEST_PROGRAM + "[O" + str(O_LEVEL) + "]", level=2)
+    logger.log("TARGET_P: " + TARGET_PROGRAM + "[O" + str(TARGET_PROGRAM_O)  + "]", level=2)
+    logger.log("MODE: " + str(genetics.mode.name), level=2)
+    unmodified_features: (list, list) = find_entry(TEST_PROGRAM, O_LEVEL)["v"], find_entry(TEST_PROGRAM, O_LEVEL)["w"]
     modified_features: (list, list) = genetics.run()
-    x = 0
+    logger.log(
+        "initial pss = " + str(pss.compare(FEATURES[0], FEATURES[1], unmodified_features[0], unmodified_features[1])),
+        level=2)
+    logger.log("final pss = " + str(pss.compare(FEATURES[0], FEATURES[1], modified_features[0], modified_features[1])),
+               level=2)

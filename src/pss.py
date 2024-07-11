@@ -14,20 +14,19 @@ def compare(p0: str, v1: list, w1: list) -> float:
 def compare(v0: list, w0: list, v1: list, w1: list) -> float:
     sim_cg: float = compute_similarity(v0, v1)
     sim_cfg: float = compute_similarity(w0, w1)
-    pss_value: float = (sim_cg + sim_cfg) / (2 * np.sqrt(2))
-    return pss_value
+    pss: float = (sim_cg + sim_cfg) / (2 * np.sqrt(2))
+    return pss
 
 
 def compute_similarity(feat0: list, feat1: list) -> float:
     sum = 0
     for i in range(min(len(feat0), len(feat1))):
         sum += ((feat0[i] - feat1[i]) ** 2)
-
     return np.sqrt(2) - np.sqrt(sum)
 
 
-def compute_features(p: str) -> (list, list):
-    proj: angr.Project = init_angr(p)
+def compute_features(binary: str) -> (list, list):
+    proj: angr.Project = init_angr(binary)
     v = compute_v(proj)
     w = compute_w(proj)
     return v, w

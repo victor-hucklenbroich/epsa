@@ -21,8 +21,6 @@ class LogLevel(Enum):
 LOG_LEVEL: LogLevel = LogLevel.INFO
 LOG_DIR = os.path.join(WORKING_DIR, 'logs')
 LOG_FILE = os.path.join(LOG_DIR, datetime.now().ctime().strip() + '.log')
-LOG_PREFIX_PSS: str = "[PSS] "
-LOG_PREFIX_MOD: str = "[MOD] "
 
 
 def find_entry(name: str, o: int) -> dict:
@@ -34,19 +32,23 @@ def find_entry(name: str, o: int) -> dict:
 # Test data
 BASE_DATA_PATH: str = os.path.join(WORKING_DIR, 'data')
 DEMO_DATA_PATH: str = os.path.join(BASE_DATA_PATH, 'demo')
+CONFIG: dict = pd.read_pickle(os.path.join(BASE_DATA_PATH, 'config'))
+ARCHIVE_PATH: str = os.path.join(DEMO_DATA_PATH, CONFIG["arch"])
 REPO_DATA: list = pd.read_pickle(os.path.join(BASE_DATA_PATH, "BO_REPO_DATA"))
-TEST_PROGRAM: str = "lua"
-O_LEVEL: int = 0
+TEST_PROGRAM: str = CONFIG["name"]
+TARGET_PROGRAM: str = "lua"
+TARGET_PROGRAM_O: int = 0
+O_LEVEL: int = CONFIG["o"]
 TEST_PROGRAM_PATH: str = os.path.join(DEMO_DATA_PATH, TEST_PROGRAM)
 TEST_SOURCES_PATH: str = os.path.join(TEST_PROGRAM_PATH, "src")
-ARCHIVE_PATH: str = TEST_PROGRAM_PATH + "[O" + str(O_LEVEL) + "].zip"
 BINARY_PATH: str = os.path.join(TEST_SOURCES_PATH, TEST_PROGRAM)
-FEATURES: (list, list) = find_entry(TEST_PROGRAM, O_LEVEL)["v"], find_entry(TEST_PROGRAM, O_LEVEL)["w"]
-
+FEATURES: (list, list) = (find_entry(TARGET_PROGRAM, TARGET_PROGRAM_O)["v"],
+                          find_entry(TARGET_PROGRAM, TARGET_PROGRAM_O)["w"])
 
 # Genetics
 POPULATION_SIZE: int = 10
-GENERATIONS: int = 2
+GENERATIONS: int = 10
+SELECTION_RATIO: float = 0.4
 NOISE_HEADER: str = TEST_PROGRAM + "noise"
 
 

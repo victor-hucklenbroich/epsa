@@ -30,8 +30,7 @@ def compile_program(dir):
     make = constants.make()
     make_cmd = [make, 'all']
     subprocess.run(make_cmd, cwd=dir)
-    logger.log("compiled " + path_tail(dir) +
-               " successfully using Makefile in " + str(round(time.time() - start_time, 2)) + " seconds", level=1)
+    logger.log("compiled " + path_tail(dir) + " in " + str(round(time.time() - start_time, 2)) + " seconds", level=1)
 
 
 def clean(path: Path, replace_with_archives=False):
@@ -48,10 +47,14 @@ def clean(path: Path, replace_with_archives=False):
 
 
 def replace_data_with_archive():
-    cmd = ['rm', '-rf', TEST_PROGRAM_PATH]
-    subprocess.check_output(cmd)
+    remove_working_dir()
     shutil.unpack_archive(ARCHIVE_PATH, DEMO_DATA_PATH)
     logger.log("replaced test data with available archives: " + ARCHIVE_PATH, level=1)
+
+
+def remove_working_dir():
+    cmd = ['rm', '-rf', TEST_PROGRAM_PATH]
+    subprocess.check_output(cmd)
 
 
 def has_makefile(dir) -> bool:
