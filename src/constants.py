@@ -50,6 +50,7 @@ POPULATION_SIZE: int = 10
 GENERATIONS: int = 10
 SELECTION_RATIO: float = 0.4
 NOISE_HEADER: str = TEST_PROGRAM + "noise"
+MIN_FITNESS: float = -10000
 
 
 # Dependencies

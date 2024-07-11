@@ -123,7 +123,8 @@ class Source:
 
 
 class Individual:
-    def __init__(self, path: str, sources: [Source], additions: [Function], alive: int, fit: float = -10000):
+    def __init__(self, path: str, sources: [Source], additions: [Function], alive: int,
+                 fit: float = constants.MIN_FITNESS):
         self.path = path
         self.sources = sources
         self.additions = additions
@@ -156,6 +157,10 @@ class Individual:
                 for gene in genome.genes:
                     genes.append(gene)
         return genes
+
+    def set_fitness(self, f):
+        if f > self.fitness or f == constants.MIN_FITNESS:
+            self.fitness = f
 
     def add_gene(self, gene: Gene):
         source: Source = random.choice(self.sources)
@@ -230,9 +235,7 @@ def initial_population(p: str, size: int) -> list:
 
 def evolutionary_cycle(generation: int, population: list, features: (list, list)) -> list:
     for individual in population:
-        new_fit: float = fitness(individual, features)
-        if new_fit > individual.fitness:
-            individual.fitness = new_fit
+        individual.set_fitness(fitness(individual, features))
     population.sort(reverse=True, key=lambda i: i.fitness)
     log_generation(generation, population)
     pop = selection(population)
@@ -259,7 +262,7 @@ def fitness(i: Individual, features: (list, list)) -> float:
     except Exception as e:
         logger.log(e.__str__())
         t = time.time() - start_time
-        fit = -10000
+        fit = constants.MIN_FITNESS
     logger.log(str(i) + ": compilation, angr analysis, pss took " + str(round(t, 2)) + " seconds", level=1)
     return fit
 
