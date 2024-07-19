@@ -202,10 +202,14 @@ def run() -> (list, list):
     features: (list, list) = constants.FEATURES
     population: list = initial_population(constants.TEST_PROGRAM_PATH, constants.POPULATION_SIZE)
     i: int = 0
+    # evolutionary cycle
     while i < constants.GENERATIONS:
-        population = evolutionary_cycle(i, population, features)
+        previous: list = copy.deepcopy(population)
+        population = evolutionary_cycle(i, population, previous, features)
         i += 1
-    population.sort(reverse=True, key=lambda individual: fitness(individual, features))
+
+    # last Generation
+    fitness_sort(population, features)
     log_generation(i, population)
     clean(Path(constants.TEST_PROGRAM_PATH), replace_with_archives=True)
     best: Individual = population[0]
@@ -226,19 +230,28 @@ def initial_population(p: str, size: int) -> list:
         i += 1
 
     for individual in population:
-        for source in individual.sources:
-            for genome in source.genomes:
-                if 0 == random.randint(0, 3):
-                    genome.genes.append(generate_gene(individual, genome.min_type))
+        create_individual(base=individual)
     return population
 
 
-def evolutionary_cycle(generation: int, population: list, features: (list, list)) -> list:
-    for individual in population:
-        individual.set_fitness(fitness(individual, features))
-    population.sort(reverse=True, key=lambda i: i.fitness)
+def create_individual(generation: int = 0, base: Individual = None) -> Individual:
+    if base is None:
+        clean(Path(constants.TEST_PROGRAM_PATH), replace_with_archives=True)
+        base = encode_individual(constants.TEST_PROGRAM_PATH, generation + 1)
+    for source in base.sources:
+        for genome in source.genomes:
+            if 0 == random.randint(0, 3):
+                genome.genes.append(generate_gene(base, genome.min_type))
+    return base
+
+
+def evolutionary_cycle(generation: int, population: list, previous: list, features: (list, list)) -> list:
+    fitness_sort(population, features)
+    if population[0].fitness == constants.MIN_FITNESS:
+        logger.log("unfit generation, rollback to #" + str(generation - 1))
+        population = previous
     log_generation(generation, population)
-    pop = selection(population)
+    pop = selection(population, generation)
     pop += crossover(pop, generation)
     mutation(pop)
     return pop
@@ -264,14 +277,24 @@ def fitness(i: Individual, features: (list, list)) -> float:
         t = time.time() - start_time
         fit = constants.MIN_FITNESS
     logger.log(str(i) + ": compilation, angr analysis, pss took " + str(round(t, 2)) + " seconds", level=1)
+    i.set_fitness(fit)
     return fit
 
 
-def selection(population: list) -> list:
+def fitness_sort(population: list, features: (list, list)):
+    for individual in population:
+        fitness(individual, features)
+    population.sort(reverse=True, key=lambda i: i.fitness)
+
+
+def selection(population: list, generation: int) -> list:
     logger.log("Selection: ", level=2)
     selected: list = []
     for i in range(int(constants.POPULATION_SIZE * constants.SELECTION_RATIO)):
-        selected.append(population[i])
+        if population[i].fitness == constants.MIN_FITNESS:
+            selected.append(create_individual(generation=generation))
+        else:
+            selected.append(population[i])
         logger.log(population[i].__str__(), level=2)
 
     return selected
