@@ -21,9 +21,12 @@ def compare_to_repo():
 
 
 if __name__ == '__main__':
-    logger.log("TEST_P: " + TEST_PROGRAM + "[O" + str(O_LEVEL) + "]", level=2)
-    logger.log("TARGET_P: " + TARGET_PROGRAM + "[O" + str(TARGET_PROGRAM_O) + "]", level=2)
-    logger.log("MODE: " + str(genetics.mode.name), level=2)
+    test: str = TEST_PROGRAM + "[O" + str(O_LEVEL) + "]"
+    target: str = TARGET_PROGRAM + "[O" + str(TARGET_PROGRAM_O) + "]"
+    mode: str = str(genetics.mode.name)
+    logger.log("TEST_P: " + test, level=2)
+    logger.log("TARGET_P: " + target, level=2)
+    logger.log("MODE: " + mode, level=2)
     unmodified_features: (list, list) = find_entry(TEST_PROGRAM, O_LEVEL)["v"], find_entry(TEST_PROGRAM, O_LEVEL)["w"]
     modified_features: (list, list) = genetics.run()
     logger.log(
