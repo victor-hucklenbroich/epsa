@@ -165,9 +165,12 @@ class Individual:
     def add_gene(self, gene: Gene):
         source: Source = random.choice(self.sources)
         if gene.type == Genetype.FUNCTION:
+            self.additions.append(gene.function)
             source.genomes[0].genes.append(gene)
         else:
             genome: Genome = random.choice(source.genomes)
+            while genome.min_type.value > gene.type.value:
+                genome = random.choice(source.genomes)
             genome.genes.append(gene)
 
     def distribute_genes(self, genes: [Gene]):
@@ -247,6 +250,7 @@ def create_individual(generation: int = 0, base: Individual = None) -> Individua
 
 def evolutionary_cycle(generation: int, population: list, previous: list, features: (list, list)) -> list:
     fitness_sort(population, features)
+    # return to last evolutionary step if best individual is unfit
     if population[0].fitness == constants.MIN_FITNESS:
         logger.log("unfit generation, rollback to #" + str(generation - 1))
         population = previous
@@ -311,21 +315,28 @@ def crossover(parents: list, generation: int) -> list:
             p1: Individual = parents[i]
             p2: Individual = parents[j]
             child: Individual = copy.deepcopy(base)
-            # Uniform sources crossover
-            for s in range(len(child.sources)):
-                if bool(random.getrandbits(1)):
-                    child.sources[s] = p1.sources[s]
-                else:
-                    child.sources[s] = p2.sources[s]
-                child.sources[s].genomes[0].dump_genes()
-            # Generate missing functions
+            crossed_genes: list = []
+            # Uniform gene crossover
+            g: int = 0
+            while g < (len(p1.get_genes()) if len(p1.get_genes()) > len(p2.get_genes()) else len(p2.get_genes())):
+                try:
+                    if bool(random.getrandbits(1)):
+                        crossed_genes.append(p1.get_genes()[g])
+                    else:
+                        crossed_genes.append(p2.get_genes()[g])
+                except IndexError:
+                    pass
+                g += 1
+            # distribute crossed genes without duplicates
+            child.distribute_genes(list(dict.fromkeys(crossed_genes)))
+            # Generate functions iff any are missing
             for addition in p1.additions + p2.additions:
                 if addition not in child.additions:
                     child.add_gene(generate_function_gene(child, addition))
                     child.additions.append(addition)
             offspring.append(child)
             j += 1
-            logger.log(child.__str__() + ": " + p1.__str__() + ", " + p1.__str__(), level=2)
+            logger.log(child.__str__() + ": " + p1.__str__() + ", " + p2.__str__(), level=2)
 
     return offspring
 
