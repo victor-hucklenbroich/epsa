@@ -5,6 +5,7 @@ from datetime import datetime
 from enum import Enum
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 # General
@@ -13,12 +14,13 @@ WORKING_DIR: str = str(Path(os.getcwd()).parent)
 
 # Logging
 class LogLevel(Enum):
+    CRITICAL = 3
     INFO = 2
     DEBUG = 1
     ALL = 0
 
 
-LOG_LEVEL: LogLevel = LogLevel.INFO
+LOG_LEVEL: LogLevel = LogLevel.CRITICAL
 LOG_DIR = os.path.join(WORKING_DIR, 'logs')
 LOG_FILE = os.path.join(LOG_DIR, datetime.now().ctime().strip() + '.log')
 
@@ -46,9 +48,9 @@ FEATURES: (list, list) = (find_entry(TARGET_PROGRAM, TARGET_PROGRAM_O)["v"],
                           find_entry(TARGET_PROGRAM, TARGET_PROGRAM_O)["w"])
 
 # Genetics
-POPULATION_SIZE: int = 10
-GENERATIONS: int = 10
-SELECTION_RATIO: float = 0.4
+POPULATION_SIZE: int = 30
+GENERATIONS: int = 20
+SELECTION_RATIO: float = 4 / (1 + np.sqrt(1 + 8 * POPULATION_SIZE))
 MIN_FITNESS: float = -10000
 NOISE_HEADER: str = TEST_PROGRAM + "noise"
 
