@@ -237,10 +237,14 @@ def initial_population(p: str, size: int) -> list:
     return population
 
 
+def get_base_individual(generation: int = 0) -> Individual:
+    clean(Path(constants.TEST_PROGRAM_PATH), replace_with_archives=True)
+    return encode_individual(constants.TEST_PROGRAM_PATH, generation)
+
+
 def create_individual(generation: int = 0, base: Individual = None) -> Individual:
     if base is None:
-        clean(Path(constants.TEST_PROGRAM_PATH), replace_with_archives=True)
-        base = encode_individual(constants.TEST_PROGRAM_PATH, generation + 1)
+        get_base_individual(generation + 1)
     for source in base.sources:
         for genome in source.genomes:
             if 0 == random.randint(0, 3):
@@ -257,7 +261,7 @@ def evolutionary_cycle(generation: int, population: list, previous: list, featur
     log_generation(generation, population)
     pop = selection(population, generation)
     pop += crossover(pop, generation)
-    mutation(pop)
+    mutation(pop, generation)
     return pop
 
 
@@ -307,7 +311,7 @@ def selection(population: list, generation: int) -> list:
 def crossover(parents: list, generation: int) -> list:
     logger.log("\nCrossover: ", level=2)
     clean(Path(constants.TEST_PROGRAM_PATH), replace_with_archives=True)
-    base: Individual = encode_individual(constants.TEST_PROGRAM_PATH, generation + 1)
+    base: Individual = get_base_individual(generation + 1)
     offspring: list = []
     for i in range(len(parents) - 1):
         j: int = i + 1
@@ -341,8 +345,9 @@ def crossover(parents: list, generation: int) -> list:
     return offspring
 
 
-def mutation(population: list):
+def mutation(population: list, generation: int):
     logger.log("\nMutation: ", level=2)
+    # Mutate random genes in random individuals
     for individual in population:
         if 0 == random.randint(0, 1):
             genes: [Gene] = []
@@ -350,6 +355,13 @@ def mutation(population: list):
                 genes.append(generate_gene(individual, random.choice(list(Genetype))))
             individual.distribute_genes(genes)
             logger.log(individual.__str__(), level=2)
+    # Fill population to intended size, if crossover did not
+    if len(population) < constants.POPULATION_SIZE:
+        base: Individual = get_base_individual(generation)
+        i: int = len(population)
+        while i < constants.POPULATION_SIZE:
+            population.append(create_individual(generation, base))
+            i += 1
 
 
 def generate_gene(i: Individual, min_type: Genetype) -> Gene:
