@@ -43,7 +43,7 @@ TARGET_PROGRAM_O: int = 0
 O_LEVEL: int = CONFIG["o"]
 TEST_PROGRAM_PATH: str = os.path.join(DEMO_DATA_PATH, TEST_PROGRAM)
 TEST_SOURCES_PATH: str = os.path.join(TEST_PROGRAM_PATH, "src")
-BINARY_PATH: str = os.path.join(TEST_SOURCES_PATH, TEST_PROGRAM)
+BINARY_PATH: str = os.path.join(TEST_PROGRAM_PATH, CONFIG["bin"])
 FEATURES: (list, list) = (find_entry(TARGET_PROGRAM, TARGET_PROGRAM_O)["v"],
                           find_entry(TARGET_PROGRAM, TARGET_PROGRAM_O)["w"])
 

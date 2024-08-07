@@ -201,18 +201,17 @@ def encode_individual(p: str, generation: int) -> Individual:
     return Individual(p, sources, [], generation)
 
 
-def run() -> (list, list):
-    features: (list, list) = constants.FEATURES
+def run(target_features: (list, list) = constants.FEATURES) -> (list, list):
     population: list = initial_population(constants.TEST_PROGRAM_PATH, constants.POPULATION_SIZE)
     i: int = 0
     # evolutionary cycle
     while i < constants.GENERATIONS:
         previous: list = copy.deepcopy(population)
-        population = evolutionary_cycle(i, population, previous, features)
+        population = evolutionary_cycle(i, population, previous, target_features)
         i += 1
 
     # last Generation
-    fitness_sort(population, features)
+    fitness_sort(population, target_features)
     log_generation(i, population)
     clean(Path(constants.TEST_PROGRAM_PATH), replace_with_archives=True)
     best: Individual = population[0]
@@ -244,7 +243,7 @@ def get_base_individual(generation: int = 0) -> Individual:
 
 def create_individual(generation: int = 0, base: Individual = None) -> Individual:
     if base is None:
-        get_base_individual(generation + 1)
+        base = get_base_individual(generation + 1)
     for source in base.sources:
         for genome in source.genomes:
             if 0 == random.randint(0, 3):
