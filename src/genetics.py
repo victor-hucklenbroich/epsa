@@ -201,7 +201,7 @@ def encode_individual(p: str, generation: int) -> Individual:
     return Individual(p, sources, [], generation)
 
 
-def run(target_features: (list, list) = constants.FEATURES) -> (list, list):
+def run(target_features: (list, list)) -> (list, list):
     population: list = initial_population(constants.TEST_PROGRAM_PATH, constants.POPULATION_SIZE)
     i: int = 0
     # evolutionary cycle

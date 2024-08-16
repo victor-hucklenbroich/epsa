@@ -38,18 +38,14 @@ CONFIG: dict = pd.read_pickle(os.path.join(BASE_DATA_PATH, 'config'))
 ARCHIVE_PATH: str = os.path.join(DEMO_DATA_PATH, CONFIG["arch"])
 REPO_DATA: list = pd.read_pickle(os.path.join(BASE_DATA_PATH, "BO_REPO_DATA"))
 TEST_PROGRAM: str = CONFIG["name"]
-TARGET_PROGRAM: str = "lua"
-TARGET_PROGRAM_O: int = 0
 O_LEVEL: int = CONFIG["o"]
 TEST_PROGRAM_PATH: str = os.path.join(DEMO_DATA_PATH, TEST_PROGRAM)
 TEST_SOURCES_PATH: str = os.path.join(TEST_PROGRAM_PATH, "src")
 BINARY_PATH: str = os.path.join(TEST_PROGRAM_PATH, CONFIG["bin"])
-FEATURES: (list, list) = (find_entry(TARGET_PROGRAM, TARGET_PROGRAM_O)["v"],
-                          find_entry(TARGET_PROGRAM, TARGET_PROGRAM_O)["w"])
 
 # Genetics
-POPULATION_SIZE: int = 30
-GENERATIONS: int = 20
+POPULATION_SIZE: int = 10
+GENERATIONS: int = 10
 SELECTION_RATIO: float = 4 / (1 + np.sqrt(1 + 8 * POPULATION_SIZE))
 MIN_FITNESS: float = -10000
 NOISE_HEADER: str = TEST_PROGRAM + "noise"

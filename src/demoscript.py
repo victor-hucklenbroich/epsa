@@ -1,29 +1,32 @@
 import pickle
+import random
 import time
 
-import preprocessor as preproc
 import pss
 from constants import *
 from src import logger, genetics
 
 
-def compare_to_repo():
-    preproc.clean(Path(TEST_PROGRAM_PATH))
-    (v0, w0) = pss.compute_features(TEST_PROGRAM_PATH)
+def compare_to_repo(features: (list, list)):
     comparisons: [dict] = []
     for p1 in REPO_DATA:
-        name: str = p1['name'] + "[" + p1['optimization'] + "]"
-        pss_value: float = pss.compare(v0, w0, p1['v'], p1['w'])
+        name: str = p1['name'] + "[O" + str(p1['optimization']) + "]"
+        pss_value: float = pss.compare(features[0], features[1], p1['v'], p1['w'])
         comparison: dict = dict(name=name, pss=pss_value)
         comparisons.append(comparison)
 
-    comparisons.sort(key=lambda c: c.get('pss'))
+    comparisons.sort(key=lambda c: c.get('pss'), reverse=True)
     for comparison in comparisons:
-        logger.log("pss(" + TEST_PROGRAM + "*, " + comparison.get('name') + ") = " + str(comparison.get('pss')),
-                   level=1)
+        logger.log("pss(" + TEST_PROGRAM + "[O" + str(O_LEVEL) + "], " + comparison.get('name') + ") = " + str(
+            comparison.get('pss')), level=3)
+    with open(
+            os.path.join(BASE_DATA_PATH, 'results', TEST_PROGRAM + "*[O" + str(O_LEVEL) + "]" + genetics.mode.name[0]),
+            "wb") as f:
+        pickle.dump(comparisons, f)
+        logger.log("saved comparisons to file: " + f.name, level=2)
 
 
-def run_evo(target: str = TARGET_PROGRAM, target_o: int = TARGET_PROGRAM_O):
+def run_evo(target: str, target_o: int):
     # targeted project has to be defined in constants or when demo is called
     test: str = TEST_PROGRAM + "[O" + str(O_LEVEL) + "]"
     mode: str = str(genetics.mode.name)
@@ -40,19 +43,22 @@ def run_evo(target: str = TARGET_PROGRAM, target_o: int = TARGET_PROGRAM_O):
     logger.log("final pss = " + str(
         pss.compare(target_features[0], target_features[1], modified_features[0], modified_features[1])),
                level=3)
-    with open(os.path.join(BASE_DATA_PATH, 'results',
-                           genetics.mode.name[0] + ":" + test + ":" + target + ";" + str(datetime.now())), "wb") as f:
-        pickle.dump({"v": modified_features[0], "w": modified_features[1]}, f)
-        logger.log("saved features to file: " + f.name, level=2)
+    compare_to_repo(modified_features)
+
+
+def obfuscation_demo():
+    run_evo(TEST_PROGRAM, O_LEVEL)
+
+
+def harmonization_demo():
+    target: dict = random.choice(REPO_DATA)
+    run_evo(target['name'], target['optimization'])
 
 
 if __name__ == '__main__':
-    i: int = 0
-    for entry in REPO_DATA:
-        logger.log("\nrun: " + str(i), level=3)
-        t: str = entry['name']
-        o: int = entry['optimization']
-        start_time: float = time.time()
-        run_evo(target=t, target_o=o)
-        logger.log("execution took " + str(round(time.time() - start_time, 2)) + " seconds", level=3)
-        i += 1
+    start_time: float = time.time()
+    if genetics.mode == genetics.ModMode.OBFUSCATE:
+        obfuscation_demo()
+    else:
+        harmonization_demo()
+    logger.log("execution took " + str(round(time.time() - start_time, 2)) + " seconds", level=3)
