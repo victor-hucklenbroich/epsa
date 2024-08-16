@@ -159,5 +159,5 @@ cython_debug/
 .DS_Store
 
 # Project specifics
-/data/*
+/data/results
 /logs/*
