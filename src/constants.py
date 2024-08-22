@@ -1,5 +1,6 @@
 import locale
 import os
+import random
 import subprocess
 from datetime import datetime
 from enum import Enum
@@ -25,6 +26,15 @@ LOG_DIR = os.path.join(WORKING_DIR, 'logs')
 LOG_FILE = os.path.join(LOG_DIR, datetime.now().ctime().strip() + '.log')
 
 
+# Execution
+class ModMode(Enum):
+    OBFUSCATE = 0
+    HARMONIZE = 1
+
+
+MODE: ModMode = ModMode.OBFUSCATE
+
+
 def find_entry(name: str, o: int) -> dict:
     for entry in REPO_DATA:
         if entry['name'] == name and entry['optimization'] == o:
@@ -42,13 +52,17 @@ O_LEVEL: int = CONFIG["o"]
 TEST_PROGRAM_PATH: str = os.path.join(DEMO_DATA_PATH, TEST_PROGRAM)
 TEST_SOURCES_PATH: str = os.path.join(TEST_PROGRAM_PATH, "src")
 BINARY_PATH: str = os.path.join(TEST_PROGRAM_PATH, CONFIG["bin"])
+TARGET: dict = random.choice(REPO_DATA)
+RESULT_PATH: str = os.path.join(BASE_DATA_PATH, 'results', TEST_PROGRAM + "*[O" + str(O_LEVEL) + "]" + MODE.name[0] + (
+    "-" + TARGET['name'] + "[O" + str(TARGET['optimization']) + "]" if MODE == ModMode.HARMONIZE else ""))
 
 # Genetics
-POPULATION_SIZE: int = 10
-GENERATIONS: int = 10
+POPULATION_SIZE: int = 3
+GENERATIONS: int = 3
 SELECTION_RATIO: float = 4 / (1 + np.sqrt(1 + 8 * POPULATION_SIZE))
 MIN_FITNESS: float = -10000
 NOISE_HEADER: str = TEST_PROGRAM + "noise"
+GLOBAL_NAME_INDEX: int = 0
 
 
 # Dependencies

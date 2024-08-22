@@ -1,23 +1,21 @@
 import copy
 import os
+import pickle
 import random
 import string
 import time
 from enum import Enum
 from pathlib import Path
 
+import angr
+import networkx as nx
 from multipledispatch import dispatch
 
-from preprocessor import search_dir, clean, compile_program
+from preprocessor import search_dir, clean, compile_program, calculate_loc
 from src import constants, pss, logger
 
-
-class ModMode(Enum):
-    OBFUSCATE = 0
-    HARMONIZE = 1
-
-
-mode: ModMode = ModMode.HARMONIZE
+# Result structure for saving genetic execution data
+RESULT_STRUCTURE: [[dict]] = []
 
 
 class Genetype(Enum):
@@ -125,14 +123,22 @@ class Source:
 class Individual:
     def __init__(self, path: str, sources: [Source], additions: [Function], alive: int,
                  fit: float = constants.MIN_FITNESS):
+        self.name: str = f'{constants.GLOBAL_NAME_INDEX:05d}'
+        constants.GLOBAL_NAME_INDEX += 1
         self.path = path
         self.sources = sources
         self.additions = additions
         self.alive_since = alive
         self.fitness = fit
+        # Result structure data
+        self.loc = 0
+        self.pss = constants.MIN_FITNESS
+        self.compile_time = constants.MIN_FITNESS
+        self.cg: nx.MultiGraph
+        self.cfgs: [nx.DiGraph]
 
     def __str__(self) -> str:
-        return str(hash(self))
+        return self.name
 
     def write_code(self):
         self.generate_noise_header()
@@ -157,6 +163,13 @@ class Individual:
                 for gene in genome.genes:
                     genes.append(gene)
         return genes
+
+    def get_number_of_genes(self, t: Genetype) -> int:
+        n: int = 0
+        for gene in self.get_genes():
+            if gene.type == t:
+                n += 1
+        return n
 
     def set_fitness(self, f):
         if f > self.fitness or f == constants.MIN_FITNESS:
@@ -219,6 +232,7 @@ def run(target_features: (list, list)) -> (list, list):
     compile_program(constants.TEST_PROGRAM_PATH)
     logger.log("best individual:  ", level=2)
     log_individual(best)
+    write_results()
     return pss.compute_features(constants.BINARY_PATH)
 
 
@@ -228,6 +242,8 @@ def initial_population(p: str, size: int) -> list:
     i: int = 0
     while i < size - 1:
         c: Individual = copy.deepcopy(population[0])
+        c.name = f'{constants.GLOBAL_NAME_INDEX:05d}'
+        constants.GLOBAL_NAME_INDEX += 1
         population.append(c)
         i += 1
 
@@ -272,13 +288,24 @@ def fitness(i: Individual, features: (list, list)) -> float:
     fit: float
     try:
         compile_program(constants.TEST_PROGRAM_PATH)
-        sim: float = pss.compare(constants.BINARY_PATH, features[0], features[1])
+        compile_time: float = round(time.time() - start_time, 2)
+        p: angr.Project = pss.init_angr(constants.BINARY_PATH)
+        cg: nx.MultiGraph = pss.construct_cg(p)
+        cfgs: [nx.DiGraph] = pss.construct_cfgs(p)
+        sim: float = pss.compare(cg, cfgs, features[0], features[1])
         logger.log(str(i) + ":pss = " + str(sim), level=1)
         t = time.time() - start_time
-        if mode == ModMode.OBFUSCATE:
+        if constants.MODE == constants.ModMode.OBFUSCATE:
             fit = 1 - sim - ((t - 65) ** 2) * 0.0001
         else:
             fit = 0 + sim - ((t - 65) ** 2) * 0.0001
+
+        # Set results structure data
+        i.cg = cg
+        i.cfgs = cfgs
+        i.compile_time = compile_time
+        i.pss = sim
+        i.loc = calculate_loc(constants.TEST_PROGRAM_PATH)
     except Exception as e:
         logger.log(e.__str__())
         t = time.time() - start_time
@@ -532,11 +559,28 @@ def random_name(a: int, b: int) -> str:
 
 def log_generation(generation: int, individuals: list):
     logger.log("\n### Generation " + str(generation) + " ###", level=2)
+    entries: [dict] = []
     for individual in individuals:
+        entry: dict = {'name': individual.name, 'loc': individual.loc,
+                       'statements': individual.get_number_of_genes(Genetype.STATEMENT),
+                       'calls': individual.get_number_of_genes(Genetype.CALL),
+                       'flows': individual.get_number_of_genes(Genetype.FLOW),
+                       'functions': individual.get_number_of_genes(Genetype.FUNCTION), 'ctime': individual.compile_time,
+                       'pss': individual.pss, 'fitness': individual.fitness, 'born': individual.alive_since,
+                       'cg': individual.cg,
+                       'cfgs': individual.cfgs}
+        entries.append(entry)
         log_individual(individual)
+    RESULT_STRUCTURE.append(entries)
 
 
 def log_individual(i: Individual):
     output: str = "- Individual: " + i.__str__() + "\n  alive since: " + str(i.alive_since) + "\n  functions: " + str(
         len(i.additions)) + "\n  genes: " + str(len(i.get_genes())) + "\n  fitness: " + str(i.fitness) + "\n"
     logger.log(output, level=2)
+
+
+def write_results():
+    with open(os.path.join(constants.RESULT_PATH, "execution"), "wb") as f:
+        pickle.dump(RESULT_STRUCTURE, f)
+        logger.log("saved genetic execution data to file: " + f.name, level=2)

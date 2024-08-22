@@ -1,5 +1,4 @@
 import pickle
-import random
 import time
 
 import pss
@@ -15,13 +14,11 @@ def compare_to_repo(features: (list, list)):
         comparison: dict = dict(name=name, pss=pss_value)
         comparisons.append(comparison)
 
-    comparisons.sort(key=lambda c: c.get('pss'), reverse=True)
+    comparisons.sort(key=lambda comp: comp.get('pss'), reverse=True)
     for comparison in comparisons:
-        logger.log("pss(" + TEST_PROGRAM + "[O" + str(O_LEVEL) + "], " + comparison.get('name') + ") = " + str(
+        logger.log("pss(" + TEST_PROGRAM + "[O" + str(O_LEVEL) + "]*, " + comparison.get('name') + ") = " + str(
             comparison.get('pss')), level=3)
-    with open(
-            os.path.join(BASE_DATA_PATH, 'results', TEST_PROGRAM + "*[O" + str(O_LEVEL) + "]" + genetics.mode.name[0]),
-            "wb") as f:
+    with open(os.path.join(RESULT_PATH, "comparisons"), "wb") as f:
         pickle.dump(comparisons, f)
         logger.log("saved comparisons to file: " + f.name, level=2)
 
@@ -29,7 +26,7 @@ def compare_to_repo(features: (list, list)):
 def run_evo(target: str, target_o: int):
     # targeted project has to be defined in constants or when demo is called
     test: str = TEST_PROGRAM + "[O" + str(O_LEVEL) + "]"
-    mode: str = str(genetics.mode.name)
+    mode: str = str(MODE.name)
     logger.log("TEST_P: " + test, level=3)
     logger.log("TARGET_P: " + target + "[O" + str(target_o) + "]", level=3)
     logger.log("MODE: " + mode, level=3)
@@ -51,13 +48,14 @@ def obfuscation_demo():
 
 
 def harmonization_demo():
-    target: dict = random.choice(REPO_DATA)
-    run_evo(target['name'], target['optimization'])
+    run_evo(TARGET['name'], TARGET['optimization'])
 
 
 if __name__ == '__main__':
+    mkdir_cmd = ['mkdir', '-p', RESULT_PATH]
+    subprocess.run(mkdir_cmd)
     start_time: float = time.time()
-    if genetics.mode == genetics.ModMode.OBFUSCATE:
+    if MODE == ModMode.OBFUSCATE:
         obfuscation_demo()
     else:
         harmonization_demo()

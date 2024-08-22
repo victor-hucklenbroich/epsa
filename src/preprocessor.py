@@ -1,3 +1,4 @@
+import json
 import os
 import shutil
 import subprocess
@@ -70,3 +71,13 @@ def make_clean(dir):
 
 def path_tail(dir: str) -> str:
     return os.path.basename(os.path.normpath(dir))
+
+
+def calculate_loc(source: str) -> int:
+    scc_cmd = [constants.scc()]
+    scc_cmd += [source, '-f', 'json']
+    data = json.loads(constants.decode(subprocess.check_output(scc_cmd)))
+    loc: int = 0
+    for entry in data:
+        loc += entry['Code']
+    return loc

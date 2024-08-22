@@ -10,6 +10,13 @@ def compare(p0: str, v1: list, w1: list) -> float:
     return compare(feat0[0], feat0[1], v1, w1)
 
 
+@dispatch(nx.MultiGraph, list, list, list)
+def compare(cg: nx.MultiGraph, cfgs: list, v1: list, w1: list) -> float:
+    v0: list = compute_v(cg)
+    w0: list = compute_w(cfgs)
+    return compare(v0, w0, v1, w1)
+
+
 @dispatch(list, list, list, list)
 def compare(v0: list, w0: list, v1: list, w1: list) -> float:
     sim_cg: float = compute_similarity(v0, v1)
