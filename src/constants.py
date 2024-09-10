@@ -2,11 +2,10 @@ import locale
 import os
 import random
 import subprocess
-from datetime import datetime
+from datetime import datetime, timedelta
 from enum import Enum
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 
 # General
@@ -57,12 +56,22 @@ RESULT_PATH: str = os.path.join(BASE_DATA_PATH, 'results', TEST_PROGRAM + "*[O" 
     "-" + TARGET['name'] + "[O" + str(TARGET['optimization']) + "]" if MODE == ModMode.HARMONIZE else ""))
 
 # Genetics
-POPULATION_SIZE: int = 3
-GENERATIONS: int = 3
-SELECTION_RATIO: float = 4 / (1 + np.sqrt(1 + 8 * POPULATION_SIZE))
+POPULATION_SIZE: int = 50
+ELITE_SIZE: int = 7
+SELECTION_RATIO: float = 0.28  # 4 / (1 + np.sqrt(1 + 8 * POPULATION_SIZE))
 MIN_FITNESS: float = -10000
 NOISE_HEADER: str = TEST_PROGRAM + "noise"
-GLOBAL_NAME_INDEX: int = 0
+TIMEOUT: datetime = datetime.now() + timedelta(hours=10)
+
+class NameUtil:
+    def __init__(self):
+        self.index: int = 0
+
+    def get_next_name(self) -> str:
+        self.index += 1
+        return f'{self.index - 1:05d}'
+
+NAME_UTIL: NameUtil = NameUtil()
 
 
 # Dependencies

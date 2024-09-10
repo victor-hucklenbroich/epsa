@@ -1,18 +1,15 @@
 import copy
-import os
 import pickle
-import random
 import string
 import time
-from enum import Enum
-from pathlib import Path
 
 import angr
 import networkx as nx
 from multipledispatch import dispatch
 
+from constants import *
 from preprocessor import search_dir, clean, compile_program, calculate_loc
-from src import constants, pss, logger
+from src import pss, logger
 
 # Result structure for saving genetic execution data
 RESULT_STRUCTURE: [[dict]] = []
@@ -73,7 +70,7 @@ class Gene:
             i: int = 0
             n: int = 0
             while i < len(self.contents):
-                if self.contents[i] == self.NESTED_PLACEHOLDER:
+                if self.contents[i] == Gene.NESTED_PLACEHOLDER:
                     content += self.contents[i].format(self.nested[n].get_content())
                     n += 1
                 else:
@@ -105,7 +102,7 @@ class Source:
         self.genomes = genomes
 
     def write_code(self):
-        output: str = "#include \"" + constants.NOISE_HEADER + ".h\"\n"
+        output: str = "#include \"" + NOISE_HEADER + ".h\"\n"
         output += self.genomes[0].get_code() + self.code[0]
         current_genome: int = 1
         i: int = 1
@@ -122,9 +119,8 @@ class Source:
 
 class Individual:
     def __init__(self, path: str, sources: [Source], additions: [Function], alive: int,
-                 fit: float = constants.MIN_FITNESS):
-        self.name: str = f'{constants.GLOBAL_NAME_INDEX:05d}'
-        constants.GLOBAL_NAME_INDEX += 1
+                 fit: float = MIN_FITNESS):
+        self.name: str = NAME_UTIL.get_next_name()
         self.path = path
         self.sources = sources
         self.additions = additions
@@ -132,8 +128,8 @@ class Individual:
         self.fitness = fit
         # Result structure data
         self.loc = 0
-        self.pss = constants.MIN_FITNESS
-        self.compile_time = constants.MIN_FITNESS
+        self.pss = MIN_FITNESS
+        self.compile_time = MIN_FITNESS
         self.cg: nx.MultiGraph
         self.cfgs: [nx.DiGraph]
 
@@ -146,9 +142,9 @@ class Individual:
             source.write_code()
 
     def generate_noise_header(self):
-        path: str = os.path.join(constants.TEST_SOURCES_PATH, constants.NOISE_HEADER + ".h")
-        content: str = ("#ifndef " + constants.NOISE_HEADER + "\n" +
-                        "#define " + constants.NOISE_HEADER + "\n")
+        path: str = os.path.join(TEST_SOURCES_PATH, NOISE_HEADER + ".h")
+        content: str = ("#ifndef " + NOISE_HEADER + "\n" +
+                        "#define " + NOISE_HEADER + "\n")
         for function in self.additions:
             content += function.get_definition() + ";\n"
 
@@ -172,7 +168,7 @@ class Individual:
         return n
 
     def set_fitness(self, f):
-        if f > self.fitness or f == constants.MIN_FITNESS:
+        if f > self.fitness or f == MIN_FITNESS:
             self.fitness = f
 
     def add_gene(self, gene: Gene):
@@ -215,10 +211,10 @@ def encode_individual(p: str, generation: int) -> Individual:
 
 
 def run(target_features: (list, list)) -> (list, list):
-    population: list = initial_population(constants.TEST_PROGRAM_PATH, constants.POPULATION_SIZE)
+    population: list = initial_population(TEST_PROGRAM_PATH, POPULATION_SIZE)
     i: int = 0
     # evolutionary cycle
-    while i < constants.GENERATIONS:
+    while datetime.now() <= TIMEOUT:
         previous: list = copy.deepcopy(population)
         population = evolutionary_cycle(i, population, previous, target_features)
         i += 1
@@ -226,24 +222,23 @@ def run(target_features: (list, list)) -> (list, list):
     # last Generation
     fitness_sort(population, target_features)
     log_generation(i, population)
-    clean(Path(constants.TEST_PROGRAM_PATH), replace_with_archives=True)
+    clean(Path(TEST_PROGRAM_PATH), replace_with_archives=True)
     best: Individual = population[0]
     best.write_code()
-    compile_program(constants.TEST_PROGRAM_PATH)
+    compile_program(TEST_PROGRAM_PATH)
     logger.log("best individual:  ", level=2)
     log_individual(best)
     write_results()
-    return pss.compute_features(constants.BINARY_PATH)
+    return pss.compute_features(BINARY_PATH)
 
 
 def initial_population(p: str, size: int) -> list:
     clean(p, replace_with_archives=True)
-    population: list = [copy.deepcopy(encode_individual(constants.TEST_PROGRAM_PATH, 0))]
+    population: list = [copy.deepcopy(encode_individual(TEST_PROGRAM_PATH, 0))]
     i: int = 0
     while i < size - 1:
         c: Individual = copy.deepcopy(population[0])
-        c.name = f'{constants.GLOBAL_NAME_INDEX:05d}'
-        constants.GLOBAL_NAME_INDEX += 1
+        c.name = NAME_UTIL.get_next_name()
         population.append(c)
         i += 1
 
@@ -253,8 +248,8 @@ def initial_population(p: str, size: int) -> list:
 
 
 def get_base_individual(generation: int = 0) -> Individual:
-    clean(Path(constants.TEST_PROGRAM_PATH), replace_with_archives=True)
-    return encode_individual(constants.TEST_PROGRAM_PATH, generation)
+    clean(Path(TEST_PROGRAM_PATH), replace_with_archives=True)
+    return encode_individual(TEST_PROGRAM_PATH, generation)
 
 
 def create_individual(generation: int = 0, base: Individual = None) -> Individual:
@@ -270,7 +265,7 @@ def create_individual(generation: int = 0, base: Individual = None) -> Individua
 def evolutionary_cycle(generation: int, population: list, previous: list, features: (list, list)) -> list:
     fitness_sort(population, features)
     # return to last evolutionary step if best individual is unfit
-    if population[0].fitness == constants.MIN_FITNESS:
+    if population[0].fitness == MIN_FITNESS:
         logger.log("unfit generation, rollback to #" + str(generation - 1))
         population = previous
     log_generation(generation, population)
@@ -281,37 +276,41 @@ def evolutionary_cycle(generation: int, population: list, previous: list, featur
 
 
 def fitness(i: Individual, features: (list, list)) -> float:
-    clean(Path(constants.TEST_PROGRAM_PATH), replace_with_archives=True)
+    clean(Path(TEST_PROGRAM_PATH), replace_with_archives=True)
     i.write_code()
     start_time: float = time.time()
     t: float
     fit: float
     try:
-        compile_program(constants.TEST_PROGRAM_PATH)
+        compile_program(TEST_PROGRAM_PATH)
         compile_time: float = round(time.time() - start_time, 2)
-        p: angr.Project = pss.init_angr(constants.BINARY_PATH)
+        p: angr.Project = pss.init_angr(BINARY_PATH)
         cg: nx.MultiGraph = pss.construct_cg(p)
         cfgs: [nx.DiGraph] = pss.construct_cfgs(p)
         sim: float = pss.compare(cg, cfgs, features[0], features[1])
         logger.log(str(i) + ":pss = " + str(sim), level=1)
         t = time.time() - start_time
-        if constants.MODE == constants.ModMode.OBFUSCATE:
+        if MODE == ModMode.OBFUSCATE:
             fit = 1 - sim - ((t - 65) ** 2) * 0.0001
         else:
             fit = 0 + sim - ((t - 65) ** 2) * 0.0001
 
-        # Set results structure data
-        i.cg = cg
-        i.cfgs = cfgs
-        i.compile_time = compile_time
-        i.pss = sim
-        i.loc = calculate_loc(constants.TEST_PROGRAM_PATH)
     except Exception as e:
         logger.log(e.__str__())
         t = time.time() - start_time
-        fit = constants.MIN_FITNESS
+        fit = MIN_FITNESS
+        cg = None
+        cfgs = []
+        compile_time = 0
+        sim = 0
     logger.log(str(i) + ": compilation, angr analysis, pss took " + str(round(t, 2)) + " seconds", level=1)
     i.set_fitness(fit)
+    # Set results structure data
+    i.cg = cg
+    i.cfgs = cfgs
+    i.compile_time = compile_time
+    i.pss = sim
+    i.loc = calculate_loc(TEST_PROGRAM_PATH)
     return fit
 
 
@@ -324,8 +323,8 @@ def fitness_sort(population: list, features: (list, list)):
 def selection(population: list, generation: int) -> list:
     logger.log("Selection: ", level=2)
     selected: list = []
-    for i in range(int(constants.POPULATION_SIZE * constants.SELECTION_RATIO)):
-        if population[i].fitness == constants.MIN_FITNESS:
+    for i in range(int(POPULATION_SIZE * SELECTION_RATIO)):
+        if population[i].fitness == MIN_FITNESS:
             selected.append(create_individual(generation=generation))
         else:
             selected.append(population[i])
@@ -334,10 +333,12 @@ def selection(population: list, generation: int) -> list:
     return selected
 
 
-def crossover(parents: list, generation: int) -> list:
+def crossover(population: list, generation: int) -> list:
     logger.log("\nCrossover: ", level=2)
-    clean(Path(constants.TEST_PROGRAM_PATH), replace_with_archives=True)
+    clean(Path(TEST_PROGRAM_PATH), replace_with_archives=True)
     base: Individual = get_base_individual(generation + 1)
+    # Elite and non-elite parents to avoid loss of diversity
+    parents: list = population[:ELITE_SIZE] + [random.choice(population[ELITE_SIZE:])]
     offspring: list = []
     for i in range(len(parents) - 1):
         j: int = i + 1
@@ -382,10 +383,10 @@ def mutation(population: list, generation: int):
             individual.distribute_genes(genes)
             logger.log(individual.__str__(), level=2)
     # Fill population to intended size, if crossover did not
-    if len(population) < constants.POPULATION_SIZE:
+    if len(population) < POPULATION_SIZE:
         base: Individual = get_base_individual(generation)
         i: int = len(population)
-        while i < constants.POPULATION_SIZE:
+        while i < POPULATION_SIZE:
             population.append(create_individual(generation, base))
             i += 1
 
@@ -581,6 +582,6 @@ def log_individual(i: Individual):
 
 
 def write_results():
-    with open(os.path.join(constants.RESULT_PATH, "execution"), "wb") as f:
+    with open(os.path.join(RESULT_PATH, "execution"), "wb") as f:
         pickle.dump(RESULT_STRUCTURE, f)
         logger.log("saved genetic execution data to file: " + f.name, level=2)
