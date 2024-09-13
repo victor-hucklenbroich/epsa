@@ -376,7 +376,7 @@ def mutation(population: list, generation: int):
     logger.log("\nMutation: ", level=2)
     # Mutate random genes in random individuals
     for individual in population:
-        if 0 == random.randint(0, 1):
+        if 0 == random.randint(0, 3):
             genes: [Gene] = []
             for i in range(random.randint(1, 10)):
                 genes.append(generate_gene(individual, random.choice(list(Genetype))))
