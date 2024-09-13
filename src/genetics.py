@@ -17,8 +17,8 @@ RESULT_STRUCTURE: [[dict]] = []
 
 class Genetype(Enum):
     EMPTY = -1
-    STATEMENT = 0
-    CALL = 1
+    CALL = 0
+    STATEMENT = 1
     FLOW = 2
     FUNCTION = 3
 
@@ -51,12 +51,8 @@ class Gene:
     def __init__(self, type: Genetype, contents: [str], nested: list, func: Function = None):
         self.type = type
         self.contents = contents
-        self.fixed = False
         self.nested = nested
         self.function = func
-
-    def set_fixed(self, value):
-        self.fixed = value
 
     def append_nested(self, gene):
         self.contents.insert(len(self.contents) / 2, Gene.NESTED_PLACEHOLDER)
@@ -290,12 +286,16 @@ def fitness(i: Individual, features: (list, list)) -> float:
         sim: float = pss.compare(cg, cfgs, features[0], features[1])
         logger.log(str(i) + ":pss = " + str(sim), level=1)
         t = time.time() - start_time
+        time_delta: float = ((t - 60 - COMPILE_TIME) ** 2) * 0.0001
         if MODE == ModMode.OBFUSCATE:
-            fit = 1 - sim - ((t - 65) ** 2) * 0.0001
+            fit = 1 - sim
         else:
-            fit = 0 + sim - ((t - 65) ** 2) * 0.0001
+            fit = 0 + sim
+        if time_delta > 0:
+            fit -= time_delta
 
     except Exception as e:
+        # Handle compile time exceptions
         logger.log(e.__str__())
         t = time.time() - start_time
         fit = MIN_FITNESS
@@ -396,16 +396,16 @@ def generate_gene(i: Individual, min_type: Genetype) -> Gene:
     if Genetype.FUNCTION == min_type:
         gene = generate_function_gene(i)
     else:
-        gene = generate_nested_gene(i)
+        gene = generate_non_function_gene(i)
     logger.log("generated " + str(gene.type) + " gene: " + gene.contents[0])
     return gene
 
 
-def generate_nested_gene(i: Individual, origin: Function = None) -> Gene:
+def generate_non_function_gene(i: Individual, origin: Function = None) -> Gene:
     gene: Gene
     g: int = random.randint(0, 6)
     if g < 3:
-        gene = generate_statement_gene()
+        gene = generate_statement_gene(i, origin)
     elif 3 < g < 5:
         gene = generate_call_gene(i, origin=origin)
     elif g <= 5:
@@ -417,31 +417,6 @@ def generate_nested_gene(i: Individual, origin: Function = None) -> Gene:
 
 def generate_empty_gene() -> Gene:
     return Gene(Genetype.EMPTY, [""], [])
-
-
-def generate_statement_gene(variables: [str] = None) -> Gene:
-    assign_existing: bool = False
-    if variables is not None:
-        assign_existing: bool = bool(random.getrandbits(1))
-    var: str
-    if assign_existing:
-        var = random.choice(variables)
-    else:
-        var = (random.choice(Function.VAR_TYPES) + " " + random_name(5, 16))
-    content: str = var + " = "
-    simple: bool = bool(random.getrandbits(1))
-    if simple:
-        content += str(random.randint(0, 255))
-    else:
-        for i in range(random.randint(2, 4)):
-            if variables is not None and bool(random.getrandbits(1)):
-                content += random.choice(variables)
-            else:
-                content += str(random.randint(0, 32767))
-            content += " " + random.choice(['+', '-', '*', '/']) + " "
-        content = content[:-3]
-    content += ";\n"
-    return Gene(Genetype.STATEMENT, [content], [])
 
 
 def generate_call_gene(i: Individual, origin: Function = None, parameters: [str] = None) -> Gene:
@@ -476,6 +451,40 @@ def generate_call_gene(i: Individual, origin: Function = None, parameters: [str]
     return Gene(Genetype.CALL, [call], [])
 
 
+def generate_statement_gene(i: Individual, origin: Function = None, variables: [str] = None) -> Gene:
+    assign_existing: bool = False
+    if variables is not None:
+        assign_existing: bool = bool(random.getrandbits(1))
+    var: str
+    if assign_existing:
+        var = random.choice(variables)
+    else:
+        var = (random.choice(Function.VAR_TYPES) + " " + random_name(5, 16))
+    contents: [str] = [var, " = "]
+    nested: list = []
+    simple: bool = bool(random.getrandbits(1))
+    if simple:
+        contents.append(str(random.randint(0, 255)))
+    else:
+        for j in range(random.randint(2, 4)):
+            if variables is not None and bool(random.getrandbits(1)):
+                contents.append(random.choice(variables))
+            elif i.additions and bool(random.getrandbits(1)):
+                call: Gene = generate_call_gene(i, origin)
+                if call.type == Genetype.EMPTY:
+                    contents.append(str(random.randint(0, 32767)))
+                else:
+                    call.contents[0] = call.contents[0][:-3]
+                    contents.append(Gene.NESTED_PLACEHOLDER)
+                    nested.append(call)
+            else:
+                contents.append(str(random.randint(0, 32767)))
+            contents.append((" " + random.choice(['+', '-', '*', '/']) + " "))
+        del contents[-1]
+    contents.append(";\n")
+    return Gene(Genetype.STATEMENT, contents, nested)
+
+
 def generate_flow_gene(i: Individual, origin: Function = None, variables: [str] = None) -> Gene:
     ops: [(str, str, int)] = [("<", "+", 1), (">", "-", -1)]
     contents: [str] = []
@@ -487,16 +496,16 @@ def generate_flow_gene(i: Individual, origin: Function = None, variables: [str] 
         val: int = random.randint(0, 255)
         contents.append("if (" + var + " == " + str(val) + ") \n")
         contents.append(Gene.NESTED_PLACEHOLDER)
-        nested.append(generate_nested_gene(i, origin))
+        nested.append(generate_non_function_gene(i, origin))
         contents.append("}\n")
         for j in range(random.randint(1, 10)):
             contents.append("else if (" + var + " == " + str(val - j) + ") {\n")
             contents.append(Gene.NESTED_PLACEHOLDER)
-            nested.append(generate_nested_gene(i, origin))
+            nested.append(generate_non_function_gene(i, origin))
             contents.append("}\n")
         contents.append("else {\n")
         contents.append(Gene.NESTED_PLACEHOLDER)
-        nested.append(generate_nested_gene(i, origin))
+        nested.append(generate_non_function_gene(i, origin))
         contents.append("}\n")
     elif flow_type == 1:
         # while loop
@@ -506,7 +515,7 @@ def generate_flow_gene(i: Individual, origin: Function = None, variables: [str] 
         op: (str, str, int) = random.choice(ops)
         contents.append("while (" + var + " " + op[0] + " " + str(random.randint(-255, 256)) + ") {\n")
         contents.append(Gene.NESTED_PLACEHOLDER)
-        nested.append(generate_nested_gene(i, origin))
+        nested.append(generate_non_function_gene(i, origin))
         contents.append(op[1] + op[1] + var + ";\n}\n")
     elif flow_type == 2:
         # for loop
@@ -516,7 +525,7 @@ def generate_flow_gene(i: Individual, origin: Function = None, variables: [str] 
         contents.append(
             ("for (int " + var + " = 0; " + var + " " + op[0] + " " + str(lim) + "; " + var + op[1] + op[1] + ") {\n"))
         contents.append(Gene.NESTED_PLACEHOLDER)
-        nested.append(generate_nested_gene(i, origin))
+        nested.append(generate_non_function_gene(i, origin))
         contents.append("}\n")
     else:
         return generate_empty_gene()
@@ -545,7 +554,7 @@ def generate_function_gene(i: Individual, function: Function) -> Gene:
     nested: list = []
     for j in range(random.randint(0, 20)):
         contents.append(Gene.NESTED_PLACEHOLDER)
-        nested.append(generate_nested_gene(i, function))
+        nested.append(generate_non_function_gene(i, function))
 
     # Function return
     if function.ret != "void":

@@ -48,6 +48,7 @@ ARCHIVE_PATH: str = os.path.join(DEMO_DATA_PATH, CONFIG["arch"])
 REPO_DATA: list = pd.read_pickle(os.path.join(BASE_DATA_PATH, "BO_REPO_DATA"))
 TEST_PROGRAM: str = CONFIG["name"]
 O_LEVEL: int = CONFIG["o"]
+COMPILE_TIME: float = 0 # TODO add measurement via config file
 TEST_PROGRAM_PATH: str = os.path.join(DEMO_DATA_PATH, TEST_PROGRAM)
 TEST_SOURCES_PATH: str = os.path.join(TEST_PROGRAM_PATH, "src")
 BINARY_PATH: str = os.path.join(TEST_PROGRAM_PATH, CONFIG["bin"])
