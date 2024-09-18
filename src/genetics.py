@@ -11,9 +11,6 @@ from constants import *
 from preprocessor import search_dir, clean, compile_program, calculate_loc
 from src import pss, logger
 
-# Result structure for saving genetic execution data
-RESULT_STRUCTURE: [[dict]] = []
-
 
 class Genetype(Enum):
     EMPTY = -1
@@ -224,7 +221,6 @@ def run(target_features: (list, list)) -> (list, list):
     compile_program(TEST_PROGRAM_PATH)
     logger.log("best individual:  ", level=2)
     log_individual(best)
-    write_results()
     return pss.compute_features(BINARY_PATH)
 
 
@@ -286,13 +282,13 @@ def fitness(i: Individual, features: (list, list)) -> float:
         sim: float = pss.compare(cg, cfgs, features[0], features[1])
         logger.log(str(i) + ":pss = " + str(sim), level=1)
         t = time.time() - start_time
-        time_delta: float = ((t - 60 - COMPILE_TIME) ** 2) * 0.0001
+        time_delta: float = (t - 60 - COMPILE_TIME) * 0.0001
         if MODE == ModMode.OBFUSCATE:
             fit = 1 - sim
+            if time_delta > 0:
+                fit -= time_delta ** 2
         else:
             fit = 0 + sim
-        if time_delta > 0:
-            fit -= time_delta
 
     except Exception as e:
         # Handle compile time exceptions
@@ -346,6 +342,7 @@ def crossover(population: list, generation: int) -> list:
             p1: Individual = parents[i]
             p2: Individual = parents[j]
             child: Individual = copy.deepcopy(base)
+            child.name = NAME_UTIL.get_next_name()
             crossed_genes: list = []
             # Uniform gene crossover
             g: int = 0
@@ -581,16 +578,12 @@ def log_generation(generation: int, individuals: list):
                        'cfgs': individual.cfgs}
         entries.append(entry)
         log_individual(individual)
-    RESULT_STRUCTURE.append(entries)
+    with open(os.path.join(RESULT_PATH, ("gen" + str(generation))), "wb") as f:
+        pickle.dump(entries, f)
+        logger.log("saved genetic execution data of generation " + str(generation) + " to file: " + f.name, level=2)
 
 
 def log_individual(i: Individual):
     output: str = "- Individual: " + i.__str__() + "\n  alive since: " + str(i.alive_since) + "\n  functions: " + str(
         len(i.additions)) + "\n  genes: " + str(len(i.get_genes())) + "\n  fitness: " + str(i.fitness) + "\n"
     logger.log(output, level=2)
-
-
-def write_results():
-    with open(os.path.join(RESULT_PATH, "execution"), "wb") as f:
-        pickle.dump(RESULT_STRUCTURE, f)
-        logger.log("saved genetic execution data to file: " + f.name, level=2)

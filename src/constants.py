@@ -20,7 +20,7 @@ class LogLevel(Enum):
     ALL = 0
 
 
-LOG_LEVEL: LogLevel = LogLevel.CRITICAL
+LOG_LEVEL: LogLevel = LogLevel.INFO
 LOG_DIR = os.path.join(WORKING_DIR, 'logs')
 LOG_FILE = os.path.join(LOG_DIR, datetime.now().ctime().strip() + '.log')
 
@@ -48,7 +48,7 @@ ARCHIVE_PATH: str = os.path.join(DEMO_DATA_PATH, CONFIG["arch"])
 REPO_DATA: list = pd.read_pickle(os.path.join(BASE_DATA_PATH, "BO_REPO_DATA"))
 TEST_PROGRAM: str = CONFIG["name"]
 O_LEVEL: int = CONFIG["o"]
-COMPILE_TIME: float = 0 # TODO add measurement via config file
+COMPILE_TIME: float = CONFIG["ctime"]
 TEST_PROGRAM_PATH: str = os.path.join(DEMO_DATA_PATH, TEST_PROGRAM)
 TEST_SOURCES_PATH: str = os.path.join(TEST_PROGRAM_PATH, "src")
 BINARY_PATH: str = os.path.join(TEST_PROGRAM_PATH, CONFIG["bin"])
