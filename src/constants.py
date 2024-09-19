@@ -57,9 +57,9 @@ RESULT_PATH: str = os.path.join(BASE_DATA_PATH, 'results', TEST_PROGRAM + "*[O" 
     "-" + TARGET['name'] + "[O" + str(TARGET['optimization']) + "]" if MODE == ModMode.HARMONIZE else ""))
 
 # Genetics
-POPULATION_SIZE: int = 50
-ELITE_SIZE: int = 7
-SELECTION_RATIO: float = 0.28  # 4 / (1 + np.sqrt(1 + 8 * POPULATION_SIZE))
+POPULATION_SIZE: int = 100
+ELITE_SIZE: int = 10
+SELECTION_RATIO: float = 0.22  # 4 / (1 + np.sqrt(1 + 8 * POPULATION_SIZE))
 MIN_FITNESS: float = -10000
 NOISE_HEADER: str = TEST_PROGRAM + "noise"
 TIMEOUT: datetime = datetime.now() + timedelta(hours=10)

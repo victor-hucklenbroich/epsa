@@ -334,7 +334,7 @@ def crossover(population: list, generation: int) -> list:
     clean(Path(TEST_PROGRAM_PATH), replace_with_archives=True)
     base: Individual = get_base_individual(generation + 1)
     # Elite and non-elite parents to avoid loss of diversity
-    parents: list = population[:ELITE_SIZE] + [random.choice(population[ELITE_SIZE:])]
+    parents: list = population[:ELITE_SIZE] + [random.choice(population[ELITE_SIZE:])] + [random.choice(population[ELITE_SIZE:])]
     offspring: list = []
     for i in range(len(parents) - 1):
         j: int = i + 1
