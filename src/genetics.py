@@ -1,5 +1,6 @@
 import copy
 import pickle
+import random
 import string
 import time
 
@@ -334,7 +335,10 @@ def crossover(population: list, generation: int) -> list:
     clean(Path(TEST_PROGRAM_PATH), replace_with_archives=True)
     base: Individual = get_base_individual(generation + 1)
     # Elite and non-elite parents to avoid loss of diversity
-    parents: list = population[:ELITE_SIZE] + [random.choice(population[ELITE_SIZE:])] + [random.choice(population[ELITE_SIZE:])]
+    non_elites: list = population[ELITE_SIZE:]
+    rand: Individual = random.choice(non_elites)
+    non_elites.remove(rand)
+    parents: list = population[:ELITE_SIZE] + [rand] + [random.choice(non_elites)]
     offspring: list = []
     for i in range(len(parents) - 1):
         j: int = i + 1
