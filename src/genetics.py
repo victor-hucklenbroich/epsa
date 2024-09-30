@@ -1,6 +1,5 @@
 import copy
 import pickle
-import random
 import string
 import time
 
@@ -194,7 +193,7 @@ def encode_source(path: str) -> Source:
         while i < len(code):
             line: str = code[i]
             if " " in line and (
-                    ") {" in line or "){" in line) and "#" not in line and ";" and "\\" not in line and "}" not in line:
+                    ") {" in line or "){" in line) and "#" not in line and ";" and "\\" not in line and "}" not in line and "switch" not in line:
                 genomes.append(Genome(i + 1, Genetype.EMPTY, []))
             i += 1
 
@@ -425,7 +424,7 @@ def generate_empty_gene() -> Gene:
     return Gene(Genetype.EMPTY, [""], [])
 
 
-def generate_call_gene(i: Individual, origin: Function = None, parameters: [str] = None) -> Gene:
+def generate_call_gene(i: Individual, origin: Function = None, only_non_void: bool = False, parameters: [str] = None) -> Gene:
     available_functions: list
     if origin is not None:
         try:
@@ -436,6 +435,8 @@ def generate_call_gene(i: Individual, origin: Function = None, parameters: [str]
             available_functions = i.additions
     else:
         available_functions = i.additions
+    if only_non_void:
+        available_functions = list(filter(lambda f: f.ret != 'void', available_functions))
     if not available_functions:
         return generate_empty_gene()
     func: Function = random.choice(available_functions)
@@ -476,11 +477,11 @@ def generate_statement_gene(i: Individual, origin: Function = None, variables: [
             if variables is not None and bool(random.getrandbits(1)):
                 contents.append(random.choice(variables))
             elif i.additions and bool(random.getrandbits(1)):
-                call: Gene = generate_call_gene(i, origin)
+                call: Gene = generate_call_gene(i, origin, only_non_void=True)
                 if call.type == Genetype.EMPTY:
                     contents.append(str(random.randint(0, 32767)))
                 else:
-                    call.contents[0] = call.contents[0][:-3]
+                    call.contents[0] = call.contents[0][:-2]
                     contents.append(Gene.NESTED_PLACEHOLDER)
                     nested.append(call)
             else:
