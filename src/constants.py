@@ -63,6 +63,7 @@ SELECTION_RATIO: float = 0.22  # 4 / (1 + np.sqrt(1 + 8 * POPULATION_SIZE))
 MIN_FITNESS: float = -10000
 NOISE_HEADER: str = TEST_PROGRAM + "noise"
 TIMEOUT: datetime = datetime.now() + timedelta(hours=10)
+EXCLUSIONS: list = [str(os.path.join(DEMO_DATA_PATH, TEST_SOURCES_PATH, "lapi.c"))]
 
 class NameUtil:
     def __init__(self):

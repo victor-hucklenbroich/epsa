@@ -96,8 +96,11 @@ class Source:
         self.genomes = genomes
 
     def write_code(self):
-        output: str = "#include \"" + NOISE_HEADER + ".h\"\n"
-        output += self.genomes[0].get_code() + self.code[0]
+        output: str = ""
+        if self.genomes:
+            output += "#include \"" + NOISE_HEADER + ".h\"\n"
+            output += self.genomes[0].get_code()
+        output += self.code[0]
         current_genome: int = 1
         i: int = 1
         while i < len(self.code):
@@ -184,14 +187,16 @@ class Individual:
 def encode_source(path: str) -> Source:
     with open(path, "r") as s:
         code = s.readlines()
-    genomes: list = [Genome(0, Genetype.FUNCTION, [])]
-    i: int = 0
-    while i < len(code):
-        line: str = code[i]
-        if " " in line and (
-                ") {" in line or "){" in line) and "#" not in line and ";" and "\\" not in line and "}" not in line:
-            genomes.append(Genome(i + 1, Genetype.EMPTY, []))
-        i += 1
+    genomes: list = []
+    if path not in EXCLUSIONS:
+        genomes.append(Genome(0, Genetype.FUNCTION, []))
+        i: int = 0
+        while i < len(code):
+            line: str = code[i]
+            if " " in line and (
+                    ") {" in line or "){" in line) and "#" not in line and ";" and "\\" not in line and "}" not in line:
+                genomes.append(Genome(i + 1, Genetype.EMPTY, []))
+            i += 1
 
     return Source(path, code, genomes)
 
