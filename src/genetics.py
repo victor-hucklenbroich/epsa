@@ -174,8 +174,14 @@ class Individual:
             source.genomes[0].genes.append(gene)
         else:
             genome: Genome = random.choice(source.genomes)
+            counter: int = 0
             while genome.min_type.value > gene.type.value:
+                if counter > 10:
+                    # stop infinite loop if source contains only high min type genomes
+                    source = random.choice(self.sources)
+                    counter = 0
                 genome = random.choice(source.genomes)
+                counter += 1
             genome.genes.append(gene)
 
     def distribute_genes(self, genes: [Gene]):
@@ -354,13 +360,16 @@ def crossover(population: list, generation: int) -> list:
             crossed_genes: list = []
             # Uniform gene crossover
             g: int = 0
-            while g < (len(p1.get_genes()) if len(p1.get_genes()) > len(p2.get_genes()) else len(p2.get_genes())):
+            larger_p: Individual = p1 if len(p1.get_genes()) > len(p2.get_genes()) else p2
+            while g < len(larger_p.get_genes()):
                 try:
                     if bool(random.getrandbits(1)):
                         crossed_genes.append(p1.get_genes()[g])
                     else:
                         crossed_genes.append(p2.get_genes()[g])
                 except IndexError:
+                    if bool(random.getrandbits(1)):
+                        crossed_genes.append(larger_p.get_genes()[g])
                     pass
                 g += 1
             # distribute crossed genes without duplicates
