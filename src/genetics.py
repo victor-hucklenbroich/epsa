@@ -121,6 +121,7 @@ class Individual:
         self.sources = sources
         self.additions = additions
         self.alive_since = alive
+        self.last_altered = alive
         self.fitness = fit
         # Result structure data
         self.loc = 0
@@ -395,6 +396,7 @@ def mutation(population: list, generation: int):
             for i in range(random.randint(1, 10)):
                 genes.append(generate_gene(individual, random.choice(list(Genetype))))
             individual.distribute_genes(genes)
+            individual.last_altered = generation
             logger.log(individual.__str__(), level=2)
     # Fill population to intended size, if crossover did not
     if len(population) < POPULATION_SIZE:
@@ -433,7 +435,8 @@ def generate_empty_gene() -> Gene:
     return Gene(Genetype.EMPTY, [""], [])
 
 
-def generate_call_gene(i: Individual, origin: Function = None, only_non_void: bool = False, parameters: [str] = None) -> Gene:
+def generate_call_gene(i: Individual, origin: Function = None, only_non_void: bool = False,
+                       parameters: [str] = None) -> Gene:
     available_functions: list
     if origin is not None:
         try:
@@ -593,6 +596,7 @@ def log_generation(generation: int, individuals: list):
                        'flows': individual.get_number_of_genes(Genetype.FLOW),
                        'functions': individual.get_number_of_genes(Genetype.FUNCTION), 'ctime': individual.compile_time,
                        'pss': individual.pss, 'fitness': individual.fitness, 'born': individual.alive_since,
+                       'altered': individual.last_altered,
                        'cg': individual.cg,
                        'cfgs': individual.cfgs}
         entries.append(entry)

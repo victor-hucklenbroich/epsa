@@ -31,13 +31,21 @@ class ModMode(Enum):
     HARMONIZE = 1
 
 
-MODE: ModMode = ModMode.OBFUSCATE
+MODE: ModMode = ModMode.HARMONIZE
 
 
 def find_entry(name: str, o: int) -> dict:
     for entry in REPO_DATA:
         if entry['name'] == name and entry['optimization'] == o:
             return entry
+
+
+def find_entries(project: str) -> list:
+    entries: list = []
+    for entry in REPO_DATA:
+        if entry['project'] == project:
+            entries.append(entry)
+    return entries
 
 
 # Test data
