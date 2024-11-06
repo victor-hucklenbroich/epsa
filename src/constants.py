@@ -21,6 +21,7 @@ class LogLevel(Enum):
 
 
 LOG_LEVEL: LogLevel = LogLevel.INFO
+ENABLE_GRAPH_LOGGING: bool = True
 LOG_DIR = os.path.join(WORKING_DIR, 'logs')
 LOG_FILE = os.path.join(LOG_DIR, datetime.now().ctime().strip() + '.log')
 

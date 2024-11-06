@@ -317,11 +317,13 @@ def fitness(i: Individual, features: (list, list)) -> float:
     logger.log(str(i) + ": compilation, angr analysis, pss took " + str(round(t, 2)) + " seconds", level=1)
     i.set_fitness(fit)
     # Set results structure data
-    i.cg = cg
-    i.cfgs = cfgs
     i.compile_time = compile_time
     i.pss = sim
     i.loc = calculate_loc(TEST_PROGRAM_PATH)
+    if ENABLE_GRAPH_LOGGING:
+        i.cg = cg
+        i.cfgs = cfgs
+
     return fit
 
 
@@ -628,9 +630,10 @@ def log_generation(generation: int, individuals: list):
                        'flows': individual.get_number_of_genes(Genetype.FLOW),
                        'functions': individual.get_number_of_genes(Genetype.FUNCTION), 'ctime': individual.compile_time,
                        'pss': individual.pss, 'fitness': individual.fitness, 'born': individual.alive_since,
-                       'altered': individual.last_altered,
-                       'cg': individual.cg,
-                       'cfgs': individual.cfgs}
+                       'altered': individual.last_altered}
+        if ENABLE_GRAPH_LOGGING:
+            entry['cg'] = individual.cg
+            entry['cfgs'] = individual.cfgs
         entries.append(entry)
         log_individual(individual)
     with open(os.path.join(RESULT_PATH, ("gen" + str(generation))), "wb") as f:
