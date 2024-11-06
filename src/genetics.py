@@ -84,6 +84,9 @@ class Genome:
             code += gene.get_content() + "\n"
         return code
 
+    def add_gene(self, gene: Gene):
+        self.genes.append(gene)
+
     def dump_genes(self):
         self.genes = []
 
@@ -209,7 +212,7 @@ def encode_source(path: str) -> Source:
 
 def encode_individual(p: str, generation: int) -> Individual:
     sources: list = []
-    files: [str] = search_dir(p)
+    files: [str] = search_dir(TEST_SOURCES_PATH)
     for source in files:
         sources.append(encode_source(source))
     return Individual(p, sources, [], generation)
@@ -345,12 +348,9 @@ def crossover(population: list, generation: int) -> list:
     logger.log("\nCrossover: ", level=2)
     clean(Path(TEST_PROGRAM_PATH), replace_with_archives=True)
     base: Individual = get_base_individual(generation + 1)
-    # Elite and non-elite parents to avoid loss of diversity
-    non_elites: list = population[ELITE_SIZE:]
-    rand: Individual = random.choice(non_elites)
-    non_elites.remove(rand)
-    parents: list = population[:ELITE_SIZE] + [rand] + [random.choice(non_elites)]
+    parents = get_parents(population)
     offspring: list = []
+    # iterate parent pairs
     for i in range(len(parents) - 1):
         j: int = i + 1
         while j < len(parents):
@@ -358,24 +358,37 @@ def crossover(population: list, generation: int) -> list:
             p2: Individual = parents[j]
             child: Individual = copy.deepcopy(base)
             child.name = NAME_UTIL.get_next_name()
-            crossed_genes: list = []
-            # Uniform gene crossover
-            g: int = 0
-            larger_p: Individual = p1 if len(p1.get_genes()) > len(p2.get_genes()) else p2
-            while g < len(larger_p.get_genes()):
-                try:
-                    if bool(random.getrandbits(1)):
-                        crossed_genes.append(p1.get_genes()[g])
-                    else:
-                        crossed_genes.append(p2.get_genes()[g])
-                except IndexError:
-                    if bool(random.getrandbits(1)):
-                        crossed_genes.append(larger_p.get_genes()[g])
-                    pass
-                g += 1
-            # distribute crossed genes without duplicates
-            child.distribute_genes(list(dict.fromkeys(crossed_genes)))
-            # Generate functions iff any are missing
+
+            # iterate sources and genomes
+            s: int = 0
+            while s < len(child.sources):
+                p1_source: Source = p1.sources[s]
+                p2_source: Source = p2.sources[s]
+                c_source: Source = child.sources[s]
+                g: int = 0
+                while g < len(c_source.genomes):
+                    p1_genome: Genome = p1_source.genomes[g]
+                    p2_genome: Genome = p2_source.genomes[g]
+                    c_genome: Genome = c_source.genomes[g]
+                    larger_gene_pool: Genome = p1_genome if len(p1_genome.genes) > len(p2_genome.genes) else p2_genome
+
+                    # uniform gene crossover
+                    x: int = 0
+                    while x < len(larger_gene_pool.genes):
+                        try:
+                            if bool(random.getrandbits(1)):
+                                c_genome.add_gene(p1_genome.genes[x])
+                            else:
+                                c_genome.add_gene(p1_genome.genes[x])
+                        except IndexError:
+                            if bool(random.getrandbits(1)):
+                                c_genome.add_gene(larger_gene_pool.genes[x])
+                            pass
+                        x += 1
+                    g += 1
+                s += 1
+
+            # generate functions iff any are missing
             for addition in p1.additions + p2.additions:
                 if addition not in child.additions:
                     child.add_gene(generate_function_gene(child, addition))
@@ -387,18 +400,38 @@ def crossover(population: list, generation: int) -> list:
     return offspring
 
 
+def get_parents(population: list):
+    # elite and non-elite parents to avoid loss of diversity
+    elites: list = population[:ELITE_SIZE]
+    non_elites: list = population[ELITE_SIZE:]
+    rand: list = [random.choice(non_elites)]
+    non_elites.remove(rand[0])
+    rand.append(random.choice(non_elites))
+    parents: list = elites + rand
+    return parents
+
+
 def mutation(population: list, generation: int):
     logger.log("\nMutation: ", level=2)
-    # Mutate random genes in random individuals
+    # mutation creates random new genes
     for individual in population:
         if 0 == random.randint(0, 3):
             genes: [Gene] = []
             for i in range(random.randint(1, 10)):
                 genes.append(generate_gene(individual, random.choice(list(Genetype))))
+
+            # mutated genes either append into random genomes or nest into random genes
+            for nested in genes:
+                if bool(random.getrandbits(1)):
+                    gene: Gene = random.choice(individual.get_genes())
+                    if gene.type.value >= 1:
+                        gene.append_nested(nested)
+                        genes.remove(nested)
             individual.distribute_genes(genes)
             individual.last_altered = generation
             logger.log(individual.__str__(), level=2)
-    # Fill population to intended size, if crossover did not
+
+    # fill population to intended size, if crossover did not
     if len(population) < POPULATION_SIZE:
         base: Individual = get_base_individual(generation)
         i: int = len(population)
@@ -562,7 +595,6 @@ def generate_function_gene(i: Individual) -> Gene:
         t: str = random.choice(Function.VAR_TYPES)
         params.append((t, n))
     func: Function = Function(name, ret, params)
-    i.additions.append(func)
     return generate_function_gene(i, func)
 
 
