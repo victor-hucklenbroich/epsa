@@ -52,7 +52,7 @@ class Gene:
         self.function = func
 
     def append_nested(self, gene):
-        self.contents.insert(len(self.contents) / 2, Gene.NESTED_PLACEHOLDER)
+        self.contents.insert(int(len(self.contents) / 2), Gene.NESTED_PLACEHOLDER)
         self.nested.append(gene)
 
     def get_content(self) -> str:
@@ -593,7 +593,7 @@ def generate_function_gene(i: Individual) -> Gene:
     ret: str = random.choice(Function.RETURN_TYPES)
     params: list = []
     for j in range(random.randint(0, 6)):
-        n: str = random_name(10,15)
+        n: str = random_name(10, 15)
         t: str = random.choice(Function.VAR_TYPES)
         params.append((t, n))
     func: Function = Function(name, ret, params)
@@ -617,7 +617,8 @@ def generate_function_gene(i: Individual, function: Function) -> Gene:
 
 
 def random_name(a: int, b: int) -> str:
-    return ''.join(random.choice(string.ascii_letters)).join(random.choice(string.ascii_letters + string.digits) for i in range(random.randint(a, b)))
+    return random.choice(string.ascii_letters) + ''.join(
+        random.choice(string.ascii_letters + string.digits) for i in range(random.randint(a, b)))
 
 
 def log_generation(generation: int, individuals: list):
