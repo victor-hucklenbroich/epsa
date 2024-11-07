@@ -8,6 +8,7 @@ from src import logger, genetics
 
 def compare_to_repo(features: (list, list)):
     comparisons: [dict] = []
+    feats: dict = {'v': features[0], 'w': features[1]}
     for p1 in REPO_DATA:
         name: str = p1['name'] + "[O" + str(p1['optimization']) + "]"
         pss_value: float = pss.compare(features[0], features[1], p1['v'], p1['w'])
@@ -21,6 +22,9 @@ def compare_to_repo(features: (list, list)):
     with open(os.path.join(RESULT_PATH, "comparisons"), "wb") as f:
         pickle.dump(comparisons, f)
         logger.log("saved comparisons to file: " + f.name, level=2)
+    with open(os.path.join(RESULT_PATH, "features"), "wb") as f:
+        pickle.dump(feats, f)
+        logger.log("saved features to file: " + f.name, level=2)
 
 
 def run_evo(target: str, target_o: int):
