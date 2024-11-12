@@ -2,10 +2,7 @@ import os
 import subprocess
 from datetime import datetime
 
-from constants import LOG_DIR
-from constants import LOG_FILE
-from constants import LOG_LEVEL
-
+from src.constants import LOG_DIR, LOG_FILE, LOG_LEVEL
 
 def log(s: str, level: int = 0, prefix: str = ""):
     if not os.path.isfile(LOG_FILE):

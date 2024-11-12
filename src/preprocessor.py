@@ -6,7 +6,7 @@ import time
 import zipfile
 from pathlib import Path
 
-from constants import ARCHIVE_PATH, DEMO_DATA_PATH, TEST_PROGRAM_PATH
+from src.constants import ARCHIVE_PATH, DEMO_DATA_PATH, TEST_PROGRAM_PATH
 from src import logger, constants
 
 

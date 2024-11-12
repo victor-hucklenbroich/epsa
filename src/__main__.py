@@ -1,14 +1,12 @@
 import pickle
 import time
 
-import pss
-from constants import *
-from src import logger, genetics
+from src.constants import *
+from src import logger, genetics, pss
 
 
 def compare_to_repo(features: (list, list)):
     comparisons: [dict] = []
-    feats: dict = {'v': features[0], 'w': features[1]}
     for p1 in REPO_DATA:
         name: str = p1['name'] + "[O" + str(p1['optimization']) + "]"
         pss_value: float = pss.compare(features[0], features[1], p1['v'], p1['w'])
@@ -22,9 +20,6 @@ def compare_to_repo(features: (list, list)):
     with open(os.path.join(RESULT_PATH, "comparisons"), "wb") as f:
         pickle.dump(comparisons, f)
         logger.log("saved comparisons to file: " + f.name, level=2)
-    with open(os.path.join(RESULT_PATH, "features"), "wb") as f:
-        pickle.dump(feats, f)
-        logger.log("saved features to file: " + f.name, level=2)
 
 
 def run_evo(target: str, target_o: int):
@@ -37,6 +32,9 @@ def run_evo(target: str, target_o: int):
     target_features: (list, list) = find_entry(target, target_o)["v"], find_entry(target, target_o)["w"]
     unmodified_features: (list, list) = find_entry(TEST_PROGRAM, O_LEVEL)["v"], find_entry(TEST_PROGRAM, O_LEVEL)["w"]
     modified_features: (list, list) = genetics.run(target_features=target_features)
+    with open(os.path.join(RESULT_PATH, "features"), "wb") as f:
+        pickle.dump({'v': modified_features[0], 'w': modified_features[1]}, f)
+        logger.log("saved features to file: " + f.name, level=2)
     logger.log(
         "initial pss = " + str(
             pss.compare(target_features[0], target_features[1], unmodified_features[0], unmodified_features[1])),
