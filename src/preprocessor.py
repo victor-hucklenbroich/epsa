@@ -6,7 +6,7 @@ import time
 import zipfile
 from pathlib import Path
 
-from src.constants import ARCHIVE_PATH, DEMO_DATA_PATH, TEST_PROGRAM_PATH
+from src.constants import ARCHIVE_PATH, DEMO_DATA_PATH, TEST_PROGRAM_PATH, TEST_SOURCES_PATH
 from src import logger, constants
 
 
@@ -81,3 +81,15 @@ def calculate_loc(source: str) -> int:
     for entry in data:
         loc += entry['Code']
     return loc
+
+
+def calculate_total_loc() -> int:
+    replace_data_with_archive()
+    total_loc: int = 0
+    sources: [str] = search_dir(TEST_SOURCES_PATH)
+    i: int = 0
+    while i < len(sources):
+        total_loc += calculate_loc(sources[i])
+        i += 1
+
+    return total_loc

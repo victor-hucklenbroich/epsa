@@ -8,9 +8,10 @@ import networkx as nx
 from multipledispatch import dispatch
 
 from src.constants import *
-from src.preprocessor import search_dir, clean, compile_program, calculate_loc
+from src.preprocessor import search_dir, clean, compile_program, calculate_loc, calculate_total_loc
 from src import pss, logger
 
+MAX_MUTATIONS: int = int(calculate_total_loc() * 0.001)
 
 class Genetype(Enum):
     EMPTY = -1
@@ -419,7 +420,7 @@ def mutation(population: list, generation: int):
     for individual in population:
         if 0 == random.randint(0, 3):
             genes: [Gene] = []
-            for i in range(random.randint(1, 10)):
+            for i in range(random.randint(1, MAX_MUTATIONS)):
                 genes.append(generate_gene(individual, random.choice(list(Genetype))))
 
             # mutated genes either append into random genomes or nest into random genes
