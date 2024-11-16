@@ -420,7 +420,9 @@ def mutation(population: list, generation: int):
     for individual in population:
         if 0 == random.randint(0, 3):
             genes: [Gene] = []
-            for i in range(random.randint(1, MAX_MUTATIONS)):
+            max: int = MAX_MUTATIONS if MAX_MUTATIONS >= 10 else 10
+            min: int = int(max / 10)
+            for i in range(random.randint(min, max)):
                 genes.append(generate_gene(individual, random.choice(list(Genetype))))
 
             # mutated genes either append into random genomes or nest into random genes
