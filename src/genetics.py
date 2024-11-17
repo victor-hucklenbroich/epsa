@@ -431,7 +431,7 @@ def mutation(population: list, generation: int):
             for nested in genes:
                 if bool(random.getrandbits(1)):
                     gene: Gene = random.choice(individual.get_genes())
-                    if gene.type.value >= 1:
+                    if gene.type.value >= 2 >= nested.type.value or gene.type.value == 1 < nested.type.value:
                         gene.append_nested(nested)
                         genes.remove(nested)
             individual.distribute_genes(genes)
