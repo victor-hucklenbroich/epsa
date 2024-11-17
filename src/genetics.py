@@ -265,8 +265,10 @@ def create_individual(generation: int = 0, base: Individual = None) -> Individua
         base = get_base_individual(generation + 1)
     for source in base.sources:
         for genome in source.genomes:
-            if 0 == random.randint(0, 3):
+            i: int = 0
+            while i < random.randint(1, 10):
                 genome.genes.append(generate_gene(base, genome.min_type))
+                i += 1
     return base
 
 
