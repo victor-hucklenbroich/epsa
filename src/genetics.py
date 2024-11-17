@@ -518,7 +518,7 @@ def generate_statement_gene(i: Individual, origin: Function = None, variables: [
     if assign_existing:
         var = random.choice(variables)
     else:
-        var = (random.choice(Function.VAR_TYPES) + " " + random_name(3, 25))
+        var = (random.choice(Function.VAR_TYPES) + " " + random_name(3, 50))
     contents: [str] = [var, " = "]
     nested: list = []
     simple: bool = bool(random.getrandbits(1))
@@ -568,7 +568,7 @@ def generate_flow_gene(i: Individual, origin: Function = None, variables: [str] 
         contents.append("}\n")
     elif flow_type == 1:
         # while loop
-        var: str = random_name(3, 25) if not variables else random.choice(variables)
+        var: str = random_name(3, 50) if not variables else random.choice(variables)
         if not variables:
             contents.append("int " + var + " = " + str(random.randint(0, 255)) + ";\n")
         op: (str, str, int) = random.choice(ops)
@@ -579,7 +579,7 @@ def generate_flow_gene(i: Individual, origin: Function = None, variables: [str] 
     elif flow_type == 2:
         # for loop
         op: (str, str, int) = random.choice(ops)
-        var: str = random_name(3, 25)
+        var: str = random_name(3, 50)
         lim: int = random.randint(1, 500) * op[2]
         contents.append(
             ("for (int " + var + " = 0; " + var + " " + op[0] + " " + str(lim) + "; " + var + op[1] + op[1] + ") {\n"))
@@ -594,11 +594,11 @@ def generate_flow_gene(i: Individual, origin: Function = None, variables: [str] 
 @dispatch(Individual)
 def generate_function_gene(i: Individual) -> Gene:
     # Function head
-    name: str = random_name(3, 25)
+    name: str = random_name(3, 50)
     ret: str = random.choice(Function.RETURN_TYPES)
     params: list = []
     for j in range(random.randint(0, 6)):
-        n: str = random_name(3, 15)
+        n: str = random_name(3, 50)
         t: str = random.choice(Function.VAR_TYPES)
         params.append((t, n))
     func: Function = Function(name, ret, params)
