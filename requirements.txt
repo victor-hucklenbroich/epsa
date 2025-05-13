@@ -1,0 +1,5 @@
+numpy==2.2.5
+networkx==3.4.2
+angr==9.2.154
+multipledispatch==1.0.0
+pandas==2.2.3
